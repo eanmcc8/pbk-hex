@@ -1,0 +1,128 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+import os
+import sys
+from typing import List, Optional
+
+from cryptography.hazmat.primitives import padding as sym_padding
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives import hashes
+
+# ------------------------------------------------------------------
+# CONFIGURATION  –  edit these values
+# ------------------------------------------------------------------
+CONFIG = {
+    "CIPHERTEXT": "",
+    "SALT": "",
+    "IV": "",
+    "KEY_LEN": 32,
+    "ITERATIONS": 100_000,
+    "ALGORITHM": "SHA256",
+    "PASSLIST": "passlist.txt",
+    "OUTPUT_FILE": "decrypted.txt",
+}
+
+# ------------------------------------------------------------------
+# Helper: decode hex / base64 automatically
+# ------------------------------------------------------------------
+import base64
+
+def _b64_or_hex(data: str) -> bytes:
+    data = data.strip()
+    try:
+        return bytes.fromhex(data)
+    except ValueError:
+        try:
+            return base64.b64decode(data)
+        except Exception:
+            raise ValueError("Data must be hex or base64")
+
+# ------------------------------------------------------------------
+# Core crypto
+# ------------------------------------------------------------------
+def derive_key(password: str, salt: bytes, iterations: int,
+               key_len: int, algo) -> bytes:
+    kdf = PBKDF2HMAC(
+        algorithm=algo,
+        length=key_len,
+        salt=salt,
+        iterations=iterations,
+    )
+    return kdf.derive(password.encode("utf-8"))
+
+def aes_cbc_decrypt(ciphertext: bytes, key: bytes, iv: bytes) -> Optional[bytes]:
+    try:
+        cipher = Cipher(algorithms.AES(key), modes.CBC(iv))
+        decryptor = cipher.decryptor()
+        padded = decryptor.update(ciphertext) + decryptor.finalize()
+
+        unpadder = sym_padding.PKCS7(128).unpadder()
+        plaintext = unpadder.update(padded) + unpadder.finalize()
+        return plaintext
+    except Exception:
+        return None
+
+# ------------------------------------------------------------------
+# Password list loader
+# ------------------------------------------------------------------
+def load_passlist(path: str) -> List[str]:
+    if not os.path.isfile(path):
+        sys.exit(f"[!] Passlist file not found: {path}")
+    with open(path, "r", encoding="utf-8", errors="ignore") as fh:
+        return [line.rstrip("\n") for line in fh if line.strip()]
+
+# ------------------------------------------------------------------
+# Main
+# ------------------------------------------------------------------
+def main() -> None:
+-----------------------------------------
+    ct   = CONFIG["CIPHERTEXT"]
+    salt = CONFIG["SALT"]
+    iv   = CONFIG["IV"]
+
+    if not all((ct, salt, iv)):
+        sys.exit("[!] CIPHERTEXT, SALT and IV must be provided in CONFIG.")
+
+    try:
+        ciphertext = _b64_or_hex(ct)
+        salt_b     = _b64_or_hex(salt)
+        iv_b       = _b64_or_hex(iv)
+    except ValueError as exc:
+        sys.exit(f"[!] Decode error: {exc}")
+
+    if len(iv_b) != 16:
+        sys.exit("[!] IV must decode to exactly 16 bytes.")
+
+    algo = hashes.SHA256() if CONFIG["ALGORITHM"].upper() == "SHA256" else hashes.SHA512()
+
+    passwords = load_passlist(CONFIG["PASSLIST"])
+    print(f"[*] Loaded {len(passwords)} passwords from {CONFIG['PASSLIST']}")
+
+    # --- checker loop ------------------------------------------
+    for idx, pwd in enumerate(passwords, 1):
+        key = derive_key(pwd, salt_b, CONFIG["ITERATIONS"],
+                         CONFIG["KEY_LEN"], algo)
+        plaintext = aes_cbc_decrypt(ciphertext, key, iv_b)
+
+        if plaintext is not None:
+            try:
+                text = plaintext.decode("utf-8")
+            except UnicodeDecodeError:
+                text = plaintext.hex()
+
+            print(f"[+] SUCCESS  password #{idx}: {pwd!r}")
+            print(f"[+] Plaintext:\n{text}")
+
+            with open(CONFIG["OUTPUT_FILE"], "w", encoding="utf-8") as fh:
+                fh.write(text)
+            print(f"[+] Saved to {CONFIG['OUTPUT_FILE']}")
+            return
+
+        if idx % 1000 == 0:
+            print(f"[*] Tried {idx} passwords …")
+
+    print("[-] No password found.")
+
+if __name__ == "__main__":
+    main()
