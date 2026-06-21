@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Cleaned Readable Text + KDF Enumerater</title>
+    <title>HEX/Bin Reader + Pbkdf2/KDF Enum</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/transliteration@2.3.3/dist/browser/bundle.umd.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600&amp;display=swap');
-        
+
         body {
             margin: 0;
             font-family: 'Inter', system_ui, sans-serif;
@@ -68,28 +68,9 @@
             background-color: rgba(16, 185, 129, 0.1);
         }
 
-        #buttons {
-            position: relative;
-            width: 100%;
-            display: flex;
-            justify-content: space-around;
-        }
-
         button {
             font-size: 14px;
             cursor: pointer;
-        }
-
-        #output {
-            margin-top: 50px;
-            width: 100%;
-            height: calc(100vh - 60px);
-            padding: 10px;
-            box-sizing: border-box;
-            font-family: monospace;
-            font-size: 14px;
-            white-space: pre-wrap;
-            overflow-y: auto;
         }
     </style>
 </head>
@@ -102,8 +83,8 @@
                     <i class="fa-solid fa-shield-halved text-emerald-400 text-2xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-2xl font-bold tracking-tight font-display">KDF Enumerater</h1>
-                    <p class="text-xs text-slate-400 font-mono">PBKDF2 • HKDF • SCRYPT</p>
+                    <h1 class="text-2xl font-bold tracking-tight font-display">KDF Enumr</h1>
+                    <p class="text-xs text-slate-400 font-mono">PBKDF2 • HKDF</p>
                 </div>
             </div>
         </div>
@@ -111,28 +92,26 @@
 
     <main class="max-w-7xl mx-auto px-4 py-8">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            
+
             <!-- Config Panel -->
             <div class="space-y-4">
-                
+
                 <!-- Algorithm Configuration -->
                 <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
                     <div class="flex items-center gap-2 mb-4">
                         <i class="fa-solid fa-cog text-cyan-400"></i>
                         <h3 class="text-sm font-semibold text-slate-200">Algorithm Configuration</h3>
                     </div>
-                    
                     <div class="grid grid-cols-2 gap-4">
                         <!-- Algorithm -->
                         <div>
                             <label class="block text-xs text-slate-400 mb-1.5">Algorithm</label>
-                            <select id="algorithm" class="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-cyan-500">
+                            <select id="algorithm" onchange="toggleHKDFInfo()" class="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-cyan-500">
                                 <option value="PBKDF2">PBKDF2</option>
                                 <option value="HKDF">HKDF</option>
-                                <option value="SCRYPT">SCRYPT</option>
                             </select>
                         </div>
-                        
+
                         <!-- Hash Function -->
                         <div>
                             <label class="block text-xs text-slate-400 mb-1.5">Hash Function</label>
@@ -144,7 +123,7 @@
                             </select>
                         </div>
                     </div>
-                    
+
                     <div class="grid grid-cols-2 gap-4 mt-4">
                         <!-- Iterations -->
                         <div>
@@ -152,7 +131,7 @@
                             <input type="number" id="iterations" value="100000" 
                                    class="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-2.5 text-sm font-mono focus:outline-none focus:border-cyan-500">
                         </div>
-                        
+
                         <!-- Key Length -->
                         <div>
                             <label class="block text-xs text-slate-400 mb-1.5">Key Length (bytes)</label>
@@ -160,8 +139,25 @@
                                    class="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-2.5 text-sm font-mono focus:outline-none focus:border-cyan-500">
                         </div>
                     </div>
+
+                    <!-- HKDF Info (shown only when HKDF selected) -->
+                    <div id="hkdf-info-row" class="hidden mt-4">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label class="text-xs text-slate-400">HKDF Info</label>
+                            <div class="flex gap-1">
+                                <button onclick="setInfoFormat('hex')" id="info-hex"
+                                        class="px-2 py-0.5 text-xs rounded border border-slate-700 text-slate-400 hover:bg-slate-800">HEX</button>
+                                <button onclick="setInfoFormat('base64')" id="info-base64"
+                                        class="px-2 py-0.5 text-xs rounded border border-slate-700 text-slate-400 hover:bg-slate-800">BASE64</button>
+                                <button onclick="setInfoFormat('utf8')" id="info-utf8"
+                                        class="px-2 py-0.5 text-xs rounded border border-cyan-500/50 bg-cyan-500/10 text-cyan-300">UTF-8</button>
+                            </div>
+                        </div>
+                        <input type="text" id="hkdf-info" placeholder="Optional context / application-specific info..."
+                               class="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-2.5 text-sm font-mono focus:outline-none focus:border-cyan-500">
+                    </div>
                 </div>
-                
+
                 <!-- Salt -->
                 <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
                     <div class="flex items-center justify-between mb-3">
@@ -181,7 +177,7 @@
                     <textarea id="salt" placeholder="Enter salt value..." 
                               class="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-3 text-sm font-mono min-h-[80px] focus:outline-none focus:border-amber-500"></textarea>
                 </div>
-                
+
                 <!-- Target Derived Key -->
                 <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
                     <div class="flex items-center justify-between mb-3">
@@ -196,17 +192,93 @@
                                     class="px-3 py-1 text-xs rounded-lg border border-slate-700 text-slate-400 hover:bg-slate-800">BASE64</button>
                         </div>
                     </div>
-                    <textarea id="derivedKey" placeholder="Target derived key..." 
+                    <textarea id="derivedKey" placeholder="Optional — if provided, derived key is also compared directly." 
                               class="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-3 text-sm font-mono min-h-[80px] focus:outline-none focus:border-rose-500"></textarea>
                 </div>
-                
+
+                <!-- Encrypted Ciphertext -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-lock text-indigo-400"></i>
+                            <h3 class="text-sm font-semibold text-slate-200">Encrypted Ciphertext</h3>
+                        </div>
+                        <div class="flex gap-1">
+                            <button onclick="setCipherFormat('hex')" id="cipher-hex"
+                                    class="px-3 py-1 text-xs rounded-lg border border-slate-700 text-slate-400 hover:bg-slate-800">HEX</button>
+                            <button onclick="setCipherFormat('base64')" id="cipher-base64"
+                                    class="px-3 py-1 text-xs rounded-lg border border-indigo-500/50 bg-indigo-500/10 text-indigo-300">BASE64</button>
+                        </div>
+                    </div>
+                    <textarea id="encodedText" placeholder="Paste the encrypted ciphertext here..." 
+                              class="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-3 text-sm font-mono min-h-[80px] focus:outline-none focus:border-indigo-500"></textarea>
+
+                    <div class="grid grid-cols-2 gap-4 mt-4">
+                        <!-- Cipher Mode -->
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1.5">Cipher Mode</label>
+                            <select id="cipherMode" onchange="toggleCipherOptions()" class="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500">
+                                <option value="AES-GCM">AES-GCM</option>
+                                <option value="AES-CBC">AES-CBC</option>
+                                <option value="AES-CTR">AES-CTR</option>
+                            </select>
+                        </div>
+
+                        <!-- IV / Nonce -->
+                        <div id="iv-field">
+                            <label class="block text-xs text-slate-400 mb-1.5 flex items-center justify-between">
+                                <span>IV / Nonce</span>
+                                <div class="flex gap-1">
+                                    <button onclick="setIVFormat('hex')" id="iv-hex"
+                                            class="px-2 py-0.5 text-xs rounded border border-indigo-500/50 bg-indigo-500/10 text-indigo-300">HEX</button>
+                                    <button onclick="setIVFormat('base64')" id="iv-base64"
+                                            class="px-2 py-0.5 text-xs rounded border border-slate-700 text-slate-400 hover:bg-slate-800">B64</button>
+                                </div>
+                            </label>
+                            <input type="text" id="iv" placeholder="IV / nonce bytes..."
+                                   class="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-2.5 text-sm font-mono focus:outline-none focus:border-indigo-500">
+                        </div>
+                    </div>
+
+                    <!-- AES-GCM: tag length -->
+                    <div id="gcm-options" class="mt-4">
+                        <label class="block text-xs text-slate-400 mb-1.5">GCM Tag Length (bits)</label>
+                        <select id="gcm-tag-length" class="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500">
+                            <option value="128" selected>128</option>
+                            <option value="120">120</option>
+                            <option value="112">112</option>
+                            <option value="104">104</option>
+                            <option value="96">96</option>
+                            <option value="64">64</option>
+                            <option value="32">32</option>
+                        </select>
+                    </div>
+
+                    <!-- AES-CTR: counter bit length -->
+                    <div id="ctr-options" class="hidden mt-4">
+                        <label class="block text-xs text-slate-400 mb-1.5">Counter Bit Length (1–128)</label>
+                        <input type="number" id="ctr-counter-length" value="64" min="1" max="128"
+                               class="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-2.5 text-sm font-mono focus:outline-none focus:border-indigo-500">
+                    </div>
+
+                    <!-- IV Prepended Toggle -->
+                    <div class="mt-3 flex items-center justify-between bg-slate-800/60 rounded-xl px-3 py-2.5">
+                        <label for="iv-prepended" class="flex items-center gap-2 cursor-pointer select-none">
+                            <input type="checkbox" id="iv-prepended" onchange="toggleIVPrepended()"
+                                   class="w-4 h-4 rounded accent-indigo-500 cursor-pointer">
+                            <span class="text-xs text-slate-300">IV prepended to ciphertext</span>
+                        </label>
+                        <span id="iv-prepended-hint" class="text-xs text-slate-500 font-mono">first 12 B = nonce</span>
+                    </div>
+                </div>
+
                 <!-- Password List -->
                 <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
                     <div class="flex items-center gap-2 mb-3">
                         <i class="fa-solid fa-file-lines text-violet-400"></i>
                         <h3 class="text-sm font-semibold text-slate-200">Password List</h3>
                     </div>
-                    
+
                     <label class="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-slate-700 rounded-2xl cursor-pointer hover:border-violet-500/50 hover:bg-violet-500/5 transition-colors">
                         <div class="flex flex-col items-center justify-center">
                             <i class="fa-solid fa-upload text-slate-500 text-xl mb-2"></i>
@@ -214,33 +286,33 @@
                         </div>
                         <input type="file" id="file-upload" class="hidden" accept=".txt">
                     </label>
-                    
+
                     <div id="password-preview" class="hidden mt-3 bg-slate-800/50 rounded-xl p-3 max-h-32 overflow-y-auto">
                         <p class="text-xs text-slate-500 mb-1.5">Preview (first 5):</p>
                         <div id="preview-list" class="text-xs font-mono text-slate-400 space-y-0.5"></div>
                     </div>
                 </div>
-                
+
             </div>
-            
+
             <!-- Results Panel -->
             <div class="space-y-4">
-                
+
                 <!-- Control Panel -->
                 <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
                     <div class="flex items-center gap-2 mb-4">
                         <i class="fa-solid fa-search text-emerald-400"></i>
-                        <h3 class="text-sm font-semibold text-slate-200">Enumerate Control</h3>
+                        <h3 class="text-sm font-semibold text-slate-200">Enum Control</h3>
                     </div>
-                    
+
                     <div class="flex gap-3">
                         <button id="start-btn"
                                 onclick="startEnumeration()"
                                 class="flex-1 flex items-center justify-center gap-2 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 font-medium py-3 px-4 rounded-2xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                             <i class="fa-solid fa-play"></i>
-                            <span>Start Enumerate</span>
+                            <span>Start Enum</span>
                         </button>
-                        
+
                         <button id="stop-btn"
                                 onclick="stopEnumeration()"
                                 class="hidden flex-1 flex items-center justify-center gap-2 bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/50 text-rose-300 font-medium py-3 px-4 rounded-2xl transition-colors">
@@ -248,11 +320,11 @@
                             <span>Stop</span>
                         </button>
                     </div>
-                    
+
                     <div id="warning-text" class="hidden mt-3 text-xs text-amber-400">
-                        Please provide salt, derived key, and password list to start.
+                        Please provide salt, a password list, and either a ciphertext or a target derived key.
                     </div>
-                    
+
                     <!-- Progress -->
                     <div id="progress-section" class="hidden mt-4">
                         <div class="flex justify-between text-xs text-slate-400 mb-1.5">
@@ -267,18 +339,22 @@
                         <div class="text-xs text-slate-500 text-right mt-1 font-mono" id="progress-percent">0%</div>
                     </div>
                 </div>
-                
+
                 <!-- Found Password -->
                 <div id="found-card" class="hidden bg-emerald-900/30 border border-emerald-500/50 rounded-2xl p-5">
-                    <div class="flex items-center gap-3">
-                        <i class="fa-solid fa-check-circle text-emerald-400 text-3xl"></i>
-                        <div>
+                    <div class="flex items-start gap-3">
+                        <i class="fa-solid fa-check-circle text-emerald-400 text-3xl mt-0.5"></i>
+                        <div class="min-w-0 flex-1">
                             <p class="text-sm text-emerald-300 font-medium">Password Found!</p>
-                            <p id="found-password" class="text-xl font-mono text-emerald-200 font-bold"></p>
+                            <p id="found-password" class="text-xl font-mono text-emerald-200 font-bold break-all"></p>
+                            <div id="found-plaintext-wrap" class="hidden mt-3 pt-3 border-t border-emerald-500/30">
+                                <p class="text-xs text-emerald-400 mb-1">Decrypted Plaintext</p>
+                                <p id="found-plaintext" class="text-sm font-mono text-emerald-100 break-all whitespace-pre-wrap"></p>
+                            </div>
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Statistics -->
                 <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
                     <h3 class="text-sm font-semibold text-slate-200 mb-4">Statistics</h3>
@@ -297,14 +373,14 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Results -->
                 <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
                     <div class="flex items-center gap-2 mb-3">
                         <i class="fa-solid fa-clock text-slate-400"></i>
                         <h3 class="text-sm font-semibold text-slate-200">Test Results</h3>
                     </div>
-                    
+
                     <div class="bg-slate-950 rounded-xl p-3 max-h-96 overflow-y-auto log-container">
                         <div id="results-list" class="font-mono text-xs space-y-1">
                             <div class="text-center py-8 text-slate-600">
@@ -313,31 +389,45 @@
                         </div>
                     </div>
                 </div>
-                
+
             </div>
-            
+
         </div>
     </main>
 
-    <!-- Text Cleaner Section -->
+    <!-- HEX/Bin Reader Section -->
     <div class="max-w-7xl mx-auto px-4 py-8 border-t border-slate-800">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
-            <div class="flex items-center gap-2 mb-4">
-                <i class="fa-solid fa-file-alt text-emerald-400"></i>
-                <h3 class="text-sm font-semibold text-slate-200">Text Cleaner</h3>
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-file-code text-emerald-400"></i>
+                    <h3 class="text-sm font-semibold text-slate-200">HEX/Bin Reader</h3>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button id="import-btn" class="px-4 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 rounded-xl transition-colors text-sm">
+                        <i class="fa-solid fa-upload mr-2"></i>Import
+                    </button>
+                    <button id="save-btn" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 rounded-xl transition-colors text-sm">
+                        <i class="fa-solid fa-download mr-2"></i>Save
+                    </button>
+                </div>
             </div>
-            
-            <div id="buttons" class="mb-4">
-                <button id="import-btn" class="px-4 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 rounded-xl transition-colors">
-                    <i class="fa-solid fa-upload mr-2"></i>Import
-                </button>
-                <button id="save-btn" class="px-4 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 rounded-xl transition-colors">
-                    <i class="fa-solid fa-download mr-2"></i>Save
-                </button>
+
+            <!-- File info bar (hidden until file loaded) -->
+            <div id="file-info" class="hidden mb-3 flex items-center justify-between bg-slate-800/60 rounded-xl px-3 py-2">
+                <div class="flex items-center gap-3 text-xs font-mono">
+                    <span class="text-slate-400"><i class="fa-solid fa-file mr-1.5 text-emerald-400"></i><span id="file-name" class="text-slate-200"></span></span>
+                    <span class="text-slate-600">|</span>
+                    <span id="file-size" class="text-slate-400"></span>
+                    <span class="text-slate-600">|</span>
+                    <span class="text-slate-400">Encoding: <span id="file-encoding" class="text-cyan-400"></span></span>
+                </div>
             </div>
-            
-            <input type="file" id="file-input" style="display:none" />
-            <textarea id="output" readonly class="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-3 text-sm font-mono min-h-[200px] focus:outline-none focus:border-emerald-500"></textarea>
+
+            <input type="file" id="file-input" class="hidden" />
+            <textarea id="output" readonly
+                      class="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-3 text-sm font-mono min-h-[240px] max-h-[480px] overflow-y-auto focus:outline-none resize-y"
+                      placeholder="Import a binary or text file to inspect its contents..."></textarea>
         </div>
     </div>
 
@@ -347,10 +437,13 @@
         let results = [];
         let isRunning = false;
         let abortController = null;
-        let saltFormat = 'hex';
-        let keyFormat = 'hex';
+        let saltFormat = 'utf8';
+        let keyFormat = 'utf8';
+        let cipherFormat = 'base64';
+        let ivFormat = 'hex';
+        let infoFormat = 'utf8';
 
-        // ==================== TEXT CLEANER VARIABLES ====================
+        // ==================== HEX/Bin Reader VARIABLES ====================
         let data = new Uint8Array(0);
         const outputEl = document.getElementById('output');
         const importBtn = document.getElementById('import-btn');
@@ -392,21 +485,15 @@
 
         function parseSalt(salt) {
             try {
-                if (/^[0-9a-fA-F\s]+$/.test(salt)) {
-                    return hexToBytes(salt);
-                }
-                if (/^[A-Za-z0-9+/]+=*$/.test(salt.replace(/\s/g, ''))) {
-                    return base64ToBytes(salt);
-                }
+                if (saltFormat === 'hex') return hexToBytes(salt);
+                if (saltFormat === 'base64') return base64ToBytes(salt);
             } catch (e) {}
             return new TextEncoder().encode(salt);
         }
 
         function parseDerivedKey(key) {
             try {
-                if (/^[0-9a-fA-F\s]+$/.test(key)) {
-                    return hexToBytes(key);
-                }
+                if (keyFormat === 'hex') return hexToBytes(key);
                 return base64ToBytes(key);
             } catch (e) {
                 return new Uint8Array(0);
@@ -426,15 +513,15 @@
         // ==================== FORMAT TOGGLE FUNCTIONS ====================
         function setSaltFormat(format) {
             saltFormat = format;
-            
+
             document.getElementById('salt-hex').className = format === 'hex' 
                 ? 'px-3 py-1 text-xs rounded-lg border border-amber-500/50 bg-amber-500/10 text-amber-300'
                 : 'px-3 py-1 text-xs rounded-lg border border-slate-700 text-slate-400 hover:bg-slate-800';
-                
+
             document.getElementById('salt-base64').className = format === 'base64'
                 ? 'px-3 py-1 text-xs rounded-lg border border-amber-500/50 bg-amber-500/10 text-amber-300'
                 : 'px-3 py-1 text-xs rounded-lg border border-slate-700 text-slate-400 hover:bg-slate-800';
-                
+
             document.getElementById('salt-utf8').className = format === 'utf8'
                 ? 'px-3 py-1 text-xs rounded-lg border border-amber-500/50 bg-amber-500/10 text-amber-300'
                 : 'px-3 py-1 text-xs rounded-lg border border-slate-700 text-slate-400 hover:bg-slate-800';
@@ -442,17 +529,78 @@
 
         function setKeyFormat(format) {
             keyFormat = format;
-            
+
             document.getElementById('key-hex').className = format === 'hex'
                 ? 'px-3 py-1 text-xs rounded-lg border border-rose-500/50 bg-rose-500/10 text-rose-300'
                 : 'px-3 py-1 text-xs rounded-lg border border-slate-700 text-slate-400 hover:bg-slate-800';
-                
+
             document.getElementById('key-base64').className = format === 'base64'
                 ? 'px-3 py-1 text-xs rounded-lg border border-rose-500/50 bg-rose-500/10 text-rose-300'
                 : 'px-3 py-1 text-xs rounded-lg border border-slate-700 text-slate-400 hover:bg-slate-800';
         }
 
-        // ==================== FILE UPLOAD ====================
+        function setCipherFormat(format) {
+            cipherFormat = format;
+
+            document.getElementById('cipher-hex').className = format === 'hex'
+                ? 'px-3 py-1 text-xs rounded-lg border border-indigo-500/50 bg-indigo-500/10 text-indigo-300'
+                : 'px-3 py-1 text-xs rounded-lg border border-slate-700 text-slate-400 hover:bg-slate-800';
+
+            document.getElementById('cipher-base64').className = format === 'base64'
+                ? 'px-3 py-1 text-xs rounded-lg border border-indigo-500/50 bg-indigo-500/10 text-indigo-300'
+                : 'px-3 py-1 text-xs rounded-lg border border-slate-700 text-slate-400 hover:bg-slate-800';
+        }
+
+        function setIVFormat(format) {
+            ivFormat = format;
+
+            document.getElementById('iv-hex').className = format === 'hex'
+                ? 'px-2 py-0.5 text-xs rounded border border-indigo-500/50 bg-indigo-500/10 text-indigo-300'
+                : 'px-2 py-0.5 text-xs rounded border border-slate-700 text-slate-400 hover:bg-slate-800';
+
+            document.getElementById('iv-base64').className = format === 'base64'
+                ? 'px-2 py-0.5 text-xs rounded border border-indigo-500/50 bg-indigo-500/10 text-indigo-300'
+                : 'px-2 py-0.5 text-xs rounded border border-slate-700 text-slate-400 hover:bg-slate-800';
+        }
+
+        function setInfoFormat(format) {
+            infoFormat = format;
+
+            document.getElementById('info-hex').className = format === 'hex'
+                ? 'px-2 py-0.5 text-xs rounded border border-cyan-500/50 bg-cyan-500/10 text-cyan-300'
+                : 'px-2 py-0.5 text-xs rounded border border-slate-700 text-slate-400 hover:bg-slate-800';
+
+            document.getElementById('info-base64').className = format === 'base64'
+                ? 'px-2 py-0.5 text-xs rounded border border-cyan-500/50 bg-cyan-500/10 text-cyan-300'
+                : 'px-2 py-0.5 text-xs rounded border border-slate-700 text-slate-400 hover:bg-slate-800';
+
+            document.getElementById('info-utf8').className = format === 'utf8'
+                ? 'px-2 py-0.5 text-xs rounded border border-cyan-500/50 bg-cyan-500/10 text-cyan-300'
+                : 'px-2 py-0.5 text-xs rounded border border-slate-700 text-slate-400 hover:bg-slate-800';
+        }
+
+        function toggleHKDFInfo() {
+            const algo = document.getElementById('algorithm').value;
+            document.getElementById('hkdf-info-row').classList.toggle('hidden', algo !== 'HKDF');
+        }
+
+        function toggleCipherOptions() {
+            const mode = document.getElementById('cipherMode').value;
+            document.getElementById('gcm-options').classList.toggle('hidden', mode !== 'AES-GCM');
+            document.getElementById('ctr-options').classList.toggle('hidden', mode !== 'AES-CTR');
+            if (document.getElementById('iv-prepended').checked) toggleIVPrepended();
+        }
+
+        function parseInfo(text) {
+            if (!text) return new Uint8Array(0);
+            try {
+                if (infoFormat === 'hex') return hexToBytes(text);
+                if (infoFormat === 'base64') return base64ToBytes(text);
+            } catch (e) {}
+            return new TextEncoder().encode(text);
+        }
+
+        // ==================== passlist UPLOAD ====================
         document.getElementById('file-upload').addEventListener('change', async function(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -465,24 +613,24 @@
 
             const countEl = document.getElementById('password-count');
             countEl.textContent = `${passwordList.length.toLocaleString()} passwords loaded`;
-            
+
             const previewContainer = document.getElementById('password-preview');
             const previewList = document.getElementById('preview-list');
-            
+
             previewList.innerHTML = '';
             passwordList.slice(0, 5).forEach(pw => {
                 const div = document.createElement('div');
                 div.textContent = pw;
                 previewList.appendChild(div);
             });
-            
+
             if (passwordList.length > 5) {
                 const more = document.createElement('div');
                 more.className = 'text-slate-500 mt-1';
-                more.textContent = `...and ${passwordList.length - 5} more`;
+                more.textContent = `...and ${passwordList.length - 200} more`;
                 previewList.appendChild(more);
             }
-            
+
             previewContainer.classList.remove('hidden');
         });
 
@@ -490,7 +638,7 @@
         async function deriveKeyPBKDF2(password, salt, iterations, hash, keyLength) {
             const encoder = new TextEncoder();
             const passwordBuffer = encoder.encode(password);
-            
+
             const keyMaterial = await crypto.subtle.importKey(
                 'raw',
                 passwordBuffer,
@@ -516,7 +664,7 @@
         async function deriveKeyHKDF(password, salt, hash, keyLength) {
             const encoder = new TextEncoder();
             const passwordBuffer = encoder.encode(password);
-            
+
             const keyMaterial = await crypto.subtle.importKey(
                 'raw',
                 passwordBuffer,
@@ -530,7 +678,7 @@
                     name: 'HKDF',
                     hash: hash,
                     salt: salt,
-                    info: new Uint8Array(0),
+                    info: info,
                 },
                 keyMaterial,
                 keyLength * 8
@@ -539,9 +687,66 @@
             return new Uint8Array(derivedBits);
         }
 
-        async function deriveKeySCRYPT(password, salt, keyLength, iterations) {
-            return deriveKeyPBKDF2(password, salt, iterations || 16384, 'SHA-256', keyLength);
+        // ==================== AES DECRYPTION ====================
+        async function decryptAES(derivedKeyBytes, ivBytes, ciphertextBytes, mode) {
+            const key = await crypto.subtle.importKey(
+                'raw',
+                derivedKeyBytes,
+                { name: mode },
+                false,
+                ['decrypt']
+            );
+
+            let params;
+            if (mode === 'AES-GCM') {
+                params = { name: 'AES-GCM', iv: ivBytes, tagLength: 128 };
+            } else if (mode === 'AES-CBC') {
+                params = { name: 'AES-CBC', iv: ivBytes };
+            } else if (mode === 'AES-CTR') {
+                params = { name: 'AES-CTR', counter: ivBytes, length: 64 };
+            } else {
+                throw new Error(`Unsupported cipher mode: ${mode}`);
+            }
+
+            const decrypted = await crypto.subtle.decrypt(params, key, ciphertextBytes);
+            return new Uint8Array(decrypted);
         }
+
+        function parseCiphertext(text) {
+            if (cipherFormat === 'hex') return hexToBytes(text);
+            return base64ToBytes(text);
+        }
+
+        function parseIV(text) {
+            if (ivFormat === 'hex') return hexToBytes(text);
+            return base64ToBytes(text);
+        }
+
+        function ivSizeForMode(mode) {
+            return mode === 'AES-GCM' ? 12 : 16;
+        }
+
+        function toggleIVPrepended() {
+            const checked = document.getElementById('iv-prepended').checked;
+            const ivField = document.getElementById('iv-field');
+            const hint = document.getElementById('iv-prepended-hint');
+            const mode = document.getElementById('cipherMode').value;
+
+            ivField.style.display = checked ? 'none' : '';
+            hint.style.display = checked ? '' : 'none';
+            if (checked) {
+                const n = ivSizeForMode(mode);
+                const label = mode === 'AES-GCM' ? 'nonce' : 'IV';
+                hint.textContent = `first ${n} B = ${label}`;
+            }
+        }
+
+        // Keep hint text in sync with cipher mode selection
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('cipherMode').addEventListener('change', () => {
+                if (document.getElementById('iv-prepended').checked) toggleIVPrepended();
+            });
+        });
 
         // ==================== MAIN ENUMERATION ====================
         async function startEnumeration() {
@@ -550,31 +755,62 @@
             const iterations = parseInt(document.getElementById('iterations').value) || 100000;
             const keyLength = parseInt(document.getElementById('keyLength').value) || 32;
             const salt = document.getElementById('salt').value.trim();
-            const derivedKey = document.getElementById('derivedKey').value.trim();
+            const derivedKeyRaw = document.getElementById('derivedKey').value.trim();
+            const ciphertextRaw = document.getElementById('encodedText').value.trim();
+            const ivRaw = document.getElementById('iv').value.trim();
 
-            if (!salt || !derivedKey || passwordList.length === 0) {
+            const hasCiphertext = ciphertextRaw.length > 0;
+            const hasTargetKey = derivedKeyRaw.length > 0;
+
+            if (!salt || (!hasCiphertext && !hasTargetKey) || passwordList.length === 0) {
                 document.getElementById('warning-text').classList.remove('hidden');
                 return;
             }
 
             document.getElementById('warning-text').classList.add('hidden');
-            
+
             results = [];
             isRunning = true;
             abortController = new AbortController();
-            
+
             document.getElementById('start-btn').classList.add('hidden');
             document.getElementById('stop-btn').classList.remove('hidden');
             document.getElementById('found-card').classList.add('hidden');
             document.getElementById('results-list').innerHTML = '';
-            
+
             updateStats();
-            
+
             document.getElementById('progress-section').classList.remove('hidden');
             updateProgress(0, passwordList.length);
 
             const saltBytes = parseSalt(salt);
-            const targetKey = parseDerivedKey(derivedKey);
+            const targetKey = hasTargetKey ? parseDerivedKey(derivedKeyRaw) : null;
+            const cipherMode = document.getElementById('cipherMode').value;
+            const ivPrepended = document.getElementById('iv-prepended').checked;
+
+            let ciphertextBytes = null;
+            let ivBytes = new Uint8Array(12);
+
+            if (hasCiphertext) {
+                const rawBytes = parseCiphertext(ciphertextRaw);
+                if (ivPrepended) {
+                    const ivLen = ivSizeForMode(cipherMode);
+                    if (rawBytes.length <= ivLen) {
+                        document.getElementById('warning-text').textContent =
+                            `Ciphertext too short to contain a prepended IV (need > ${ivLen} bytes).`;
+                        document.getElementById('warning-text').classList.remove('hidden');
+                        isRunning = false;
+                        document.getElementById('start-btn').classList.remove('hidden');
+                        document.getElementById('stop-btn').classList.add('hidden');
+                        return;
+                    }
+                    ivBytes = rawBytes.slice(0, ivLen);
+                    ciphertextBytes = rawBytes.slice(ivLen);
+                } else {
+                    ciphertextBytes = rawBytes;
+                    ivBytes = ivRaw ? parseIV(ivRaw) : new Uint8Array(ivSizeForMode(cipherMode));
+                }
+            }
             const hash = getHashAlgorithm(hashFunction);
 
             let foundPassword = null;
@@ -595,37 +831,51 @@
                         case 'HKDF':
                             derivedKeyBytes = await deriveKeyHKDF(password, saltBytes, hash, keyLength);
                             break;
-                        case 'SCRYPT':
-                            derivedKeyBytes = await deriveKeySCRYPT(password, saltBytes, keyLength, iterations);
-                            break;
                         default:
-                            derivedKeyBytes = await deriveKeyPBKDF2(password, saltBytes, iterations, hash, keyLength);
+                            throw new Error(`Unknown algorithm: ${algorithm}`);
                     }
 
                     const duration = performance.now() - startTime;
-                    const match = arraysEqual(derivedKeyBytes, targetKey);
 
-                    const result = {
-                        password,
-                        derivedKey: bytesToHex(derivedKeyBytes),
-                        match,
-                        duration,
-                        index: i + 1
-                    };
+                    // Check 1 (optional): compare derived key directly
+                    if (targetKey && !arraysEqual(derivedKeyBytes, targetKey)) {
+                        const result = { password, derivedKey: bytesToHex(derivedKeyBytes), match: false, duration, index: i + 1 };
+                        results.push(result);
+                        addResultToUI(result);
+                        updateProgress(i + 1, passwordList.length);
+                        updateStats();
+                        await new Promise(resolve => setTimeout(resolve, 0));
+                        continue;
+                    }
 
+                    // Check 2 (optional): attempt AES decryption with derived key
+                    let decryptedPlaintext = null;
+                    if (ciphertextBytes) {
+                        try {
+                            const decrypted = await decryptAES(derivedKeyBytes, ivBytes, ciphertextBytes, cipherMode);
+                            decryptedPlaintext = new TextDecoder().decode(decrypted);
+                        } catch {
+                            const result = { password, derivedKey: bytesToHex(derivedKeyBytes), match: false, duration, index: i + 1 };
+                            results.push(result);
+                            addResultToUI(result);
+                            updateProgress(i + 1, passwordList.length);
+                            updateStats();
+                            await new Promise(resolve => setTimeout(resolve, 0));
+                            continue;
+                        }
+                    }
+
+                    // Passed all checks — match!
+                    const result = { password, derivedKey: bytesToHex(derivedKeyBytes), match: true, duration, index: i + 1 };
                     results.push(result);
                     addResultToUI(result);
                     updateProgress(i + 1, passwordList.length);
                     updateStats();
 
-                    if (match) {
-                        foundPassword = password;
-                        showFoundPassword(password);
-                        break;
-                    }
+                    foundPassword = password;
+                    showFoundPassword(password, decryptedPlaintext);
+                    break;
 
-                    await new Promise(resolve => setTimeout(resolve, 0));
-                    
                 } catch (error) {
                     console.error(`Error processing password: ${password}`, error);
                     updateProgress(i + 1, passwordList.length);
@@ -635,7 +885,7 @@
             isRunning = false;
             document.getElementById('start-btn').classList.remove('hidden');
             document.getElementById('stop-btn').classList.add('hidden');
-            
+
             if (!foundPassword) {
                 document.getElementById('progress-section').classList.add('hidden');
             }
@@ -652,7 +902,7 @@
 
         function updateProgress(current, total) {
             const percent = total > 0 ? (current / total) * 100 : 0;
-            
+
             document.getElementById('progress-bar').style.width = `${percent}%`;
             document.getElementById('progress-text').textContent = `${current.toLocaleString()} / ${total.toLocaleString()}`;
             document.getElementById('progress-percent').textContent = `${percent.toFixed(1)}%`;
@@ -672,14 +922,14 @@
 
         function addResultToUI(result) {
             const container = document.getElementById('results-list');
-            
+
             if (container.children.length === 1 && container.children[0].classList.contains('text-center')) {
                 container.innerHTML = '';
             }
 
             const div = document.createElement('div');
             div.className = `flex items-center gap-2 py-1 px-2 rounded result-row ${result.match ? 'match-highlight' : ''}`;
-            
+
             div.innerHTML = `
                 <div class="flex-shrink-0">
                     ${result.match 
@@ -690,75 +940,144 @@
                 <span class="text-slate-300 flex-1 truncate">${result.password}</span>
                 <span class="text-slate-600">${result.duration.toFixed(1)}ms</span>
             `;
-            
+
             container.appendChild(div);
             container.scrollTop = container.scrollHeight;
-            
+
             if (container.children.length > 100) {
                 container.removeChild(container.children[0]);
             }
         }
 
-        function showFoundPassword(password) {
+        function showFoundPassword(password, plaintext) {
             const card = document.getElementById('found-card');
-            const passwordEl = document.getElementById('found-password');
-            
-            passwordEl.textContent = password;
+            document.getElementById('found-password').textContent = password;
+
+            const wrap = document.getElementById('found-plaintext-wrap');
+            const el = document.getElementById('found-plaintext');
+            if (plaintext !== null) {
+                el.textContent = plaintext;
+                wrap.classList.remove('hidden');
+            } else {
+                wrap.classList.add('hidden');
+            }
+
             card.classList.remove('hidden');
             card.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
 
-        // ==================== TEXT CLEANER FUNCTIONS ====================
-        function decodeBest(bytes) {
-            const encodings = ['utf-7', 'utf-8', 'utf-1', 'iso-8859-1', 'ascii', 'latin1', 'utf-16', 'utf-32', 'iso-8859-15'];
-            let bestText = '';
-            let bestScore = -9;
+function initializeUI() {
+    document.getElementById('algorithm').value = 'PBKDF2';
+    document.getElementById('hashFunction').value = 'SHA-256';
+    document.getElementById('iterations').value = '100000';
+    document.getElementById('keyLength').value = '32';
+
+    setSaltFormat('hex');
+    setKeyFormat('hex');
+    setCipherFormat('base64');
+    setIVFormat('hex');
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !isRunning) {
+            const startBtn = document.getElementById('start-btn');
+            if (!startBtn.classList.contains('hidden')) {
+                startEnumeration();
+            }
+        }
+        if (e.key === 'Escape' && isRunning) {
+            stopEnumeration();
+        }
+    });
+
+    function checkCanStart() {
+        const salt = document.getElementById('salt').value.trim();
+        const derivedKey = document.getElementById('derivedKey').value.trim();
+        const ciphertext = document.getElementById('encodedText').value.trim();
+        const warning = document.getElementById('warning-text');
+
+        if (!salt || (!derivedKey && !ciphertext) || passwordList.length === 0) {
+            warning.classList.remove('hidden');
+        } else {
+            warning.classList.add('hidden');
+        }
+    }
+
+    ['salt', 'derivedKey', 'encodedText'].forEach(id => {
+        document.getElementById(id).addEventListener('input', checkCanStart);
+    });
+
+}
+
+initializeUI();
+
+      // ==================== HEX/Bin Reader FUNCTIONS ====================
+        let binDetectedEncoding = '';
+
+        function detectBestEncoding(bytes) {
+            const encodings = [
+                'utf-8', 'iso-8859-1', 'windows-1252',
+                'utf-16le', 'utf-16be', 'big5', 'gbk', 'shift_jis'
+            ];
+            let bestEnc = 'utf-8';
+            let bestScore = -1;
 
             for (const enc of encodings) {
                 try {
-                    const decoder = new TextDecoder(enc);
+                    const decoder = new TextDecoder(enc, { fatal: true });
                     const text = decoder.decode(bytes);
-                    const score = evaluateText(text);
+                    const score = printableRatio(text);
                     if (score > bestScore) {
                         bestScore = score;
-                        bestText = text;
+                        bestEnc = enc;
                     }
-                } catch (e) { /* ignore errors */ }
+                } catch (e) { /* encoding invalid for this byte sequence — skip */ }
             }
-            return bestText;
+            return bestEnc;
         }
 
-        function evaluateText(text) {
-            let score = 0;
+        function printableRatio(text) {
+            if (text.length === 0) return 0;
+            let printable = 0;
             for (let i = 0; i < text.length; i++) {
                 const c = text.charCodeAt(i);
-                if (
-                    (c >= 32 && c <= 126) ||
-                    c === 10 || c === 13 || c === 9
-                ) {
-                    score++;
-                }
+                if ((c >= 32 && c <= 126) || c === 9 || c === 10 || c === 13) printable++;
             }
-            return score;
+            return printable / text.length;
         }
 
-        function cleanText(text) {
+        function cleanHex(text) {
             let result = '';
             for (let i = 0; i < text.length; i++) {
                 const c = text.charCodeAt(i);
-                if (c >= 32 && c <= 126) {
+                if ((c >= 32 && c <= 126) || c === 9 || c === 10 || c === 13) {
                     result += text.charAt(i);
                 } else {
-                    result += ' ';
+                    result += '.';
                 }
             }
-            return result.replace(/\s+/g, '\n').trim();
+            return result;
         }
 
-        // ==================== TEXT CLEANER EVENT LISTENERS ====================
-        importBtn.onclick = () => {
-            fileInput.click();
-        };
+        function buildHexDump(bytes) {
+            const bytesPerRow = 16;
+            const lines = [];
+            for (let offset = 0; offset < bytes.length; offset += bytesPerRow) {
+                const row = bytes.slice(offset, offset + bytesPerRow);
+                const ascii = Array.from(row)
+                    .map(b => (b >= 32 && b <= 126) ? String.fromCharCode(b) : '.')
+                    .join('');
+                lines.push(`|${ascii}|`);
+            }
+            return lines.join('\n');
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return `${bytes} B`;
+            if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+            return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+        }
+
+        importBtn.onclick = () => { fileInput.click(); };
 
         fileInput.onchange = () => {
             const file = fileInput.files[0];
@@ -766,68 +1085,30 @@
             const reader = new FileReader();
             reader.onload = () => {
                 data = new Uint8Array(reader.result);
-                const decoded = decodeBest(data);
-                const cleaned = cleanText(decoded);
-                outputEl.value = cleaned;
+                binDetectedEncoding = detectBestEncoding(data);
+
+                document.getElementById('file-name').textContent = file.name;
+                document.getElementById('file-size').textContent = formatFileSize(data.length);
+                document.getElementById('file-encoding').textContent = binDetectedEncoding;
+                document.getElementById('file-info').classList.remove('hidden');
+
+                outputEl.value = buildHexDump(data);
             };
             reader.readAsArrayBuffer(file);
         };
 
         saveBtn.onclick = () => {
+            if (!outputEl.value) return;
             const blob = new Blob([outputEl.value], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'cleaned_text.txt';
+            a.download = 'output.txt';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
         };
-
-        // ==================== INITIALIZATION ====================
-        function initializeUI() {
-            document.getElementById('algorithm').value = 'PBKDF2';
-            document.getElementById('hashFunction').value = 'SHA-256';
-            document.getElementById('iterations').value = '100000';
-            document.getElementById('keyLength').value = '32';
-            
-            setSaltFormat('hex');
-            setKeyFormat('hex');
-            
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter' && !isRunning) {
-                    const startBtn = document.getElementById('start-btn');
-                    if (!startBtn.classList.contains('hidden')) {
-                        startEnumeration();
-                    }
-                }
-                
-                if (e.key === 'Escape' && isRunning) {
-                    stopEnumeration();
-                }
-            });
-            
-            function checkCanStart() {
-                const salt = document.getElementById('salt').value.trim();
-                const derivedKey = document.getElementById('derivedKey').value.trim();
-                const warning = document.getElementById('warning-text');
-                
-                if (!salt || !derivedKey || passwordList.length === 0) {
-                    warning.classList.remove('hidden');
-                } else {
-                    warning.classList.add('hidden');
-                }
-            }
-            
-            ['salt', 'derivedKey'].forEach(id => {
-                document.getElementById(id).addEventListener('input', checkCanStart);
-            });
-            
-            setTimeout(checkCanStart, 100);
-        }
-
-        initializeUI();
     </script>
 </body>
 </html>
