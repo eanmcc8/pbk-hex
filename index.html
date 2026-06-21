@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -74,6 +75,7 @@
         }
     </style>
 </head>
+
 <body class="bg-slate-950 text-slate-100">
     <!-- Header -->
     <header class="border-b border-slate-800 bg-slate-900">
@@ -106,7 +108,8 @@
                         <!-- Algorithm -->
                         <div>
                             <label class="block text-xs text-slate-400 mb-1.5">Algorithm</label>
-                            <select id="algorithm" onchange="toggleHKDFInfo()" class="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-cyan-500">
+                            <select id="algorithm" onchange="toggleHKDFInfo()"
+                                class="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-cyan-500">
                                 <option value="PBKDF2">PBKDF2</option>
                                 <option value="HKDF">HKDF</option>
                             </select>
@@ -115,7 +118,8 @@
                         <!-- Hash Function -->
                         <div>
                             <label class="block text-xs text-slate-400 mb-1.5">Hash Function</label>
-                            <select id="hashFunction" class="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-cyan-500">
+                            <select id="hashFunction"
+                                class="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-cyan-500">
                                 <option value="SHA-1">SHA-1</option>
                                 <option value="SHA-256" selected>SHA-256</option>
                                 <option value="SHA-384">SHA-384</option>
@@ -128,15 +132,15 @@
                         <!-- Iterations -->
                         <div>
                             <label class="block text-xs text-slate-400 mb-1.5">Iterations</label>
-                            <input type="number" id="iterations" value="100000" 
-                                   class="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-2.5 text-sm font-mono focus:outline-none focus:border-cyan-500">
+                            <input type="number" id="iterations" value="100000"
+                                class="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-2.5 text-sm font-mono focus:outline-none focus:border-cyan-500">
                         </div>
 
                         <!-- Key Length -->
                         <div>
                             <label class="block text-xs text-slate-400 mb-1.5">Key Length (bytes)</label>
-                            <input type="number" id="keyLength" value="32" 
-                                   class="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-2.5 text-sm font-mono focus:outline-none focus:border-cyan-500">
+                            <input type="number" id="keyLength" value="32"
+                                class="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-2.5 text-sm font-mono focus:outline-none focus:border-cyan-500">
                         </div>
                     </div>
 
@@ -146,15 +150,15 @@
                             <label class="text-xs text-slate-400">HKDF Info</label>
                             <div class="flex gap-1">
                                 <button onclick="setInfoFormat('hex')" id="info-hex"
-                                        class="px-2 py-0.5 text-xs rounded border border-slate-700 text-slate-400 hover:bg-slate-800">HEX</button>
+                                    class="px-2 py-0.5 text-xs rounded border border-slate-700 text-slate-400 hover:bg-slate-800">HEX</button>
                                 <button onclick="setInfoFormat('base64')" id="info-base64"
-                                        class="px-2 py-0.5 text-xs rounded border border-slate-700 text-slate-400 hover:bg-slate-800">BASE64</button>
+                                    class="px-2 py-0.5 text-xs rounded border border-slate-700 text-slate-400 hover:bg-slate-800">BASE64</button>
                                 <button onclick="setInfoFormat('utf8')" id="info-utf8"
-                                        class="px-2 py-0.5 text-xs rounded border border-cyan-500/50 bg-cyan-500/10 text-cyan-300">UTF-8</button>
+                                    class="px-2 py-0.5 text-xs rounded border border-cyan-500/50 bg-cyan-500/10 text-cyan-300">UTF-8</button>
                             </div>
                         </div>
                         <input type="text" id="hkdf-info" placeholder="Optional context / application-specific info..."
-                               class="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-2.5 text-sm font-mono focus:outline-none focus:border-cyan-500">
+                            class="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-2.5 text-sm font-mono focus:outline-none focus:border-cyan-500">
                     </div>
                 </div>
 
@@ -167,15 +171,15 @@
                         </div>
                         <div class="flex gap-1">
                             <button onclick="setSaltFormat('hex')" id="salt-hex"
-                                    class="px-3 py-1 text-xs rounded-lg border border-amber-500/50 bg-amber-500/10 text-amber-300">HEX</button>
+                                class="px-3 py-1 text-xs rounded-lg border border-amber-500/50 bg-amber-500/10 text-amber-300">HEX</button>
                             <button onclick="setSaltFormat('base64')" id="salt-base64"
-                                    class="px-3 py-1 text-xs rounded-lg border border-slate-700 text-slate-400 hover:bg-slate-800">BASE64</button>
+                                class="px-3 py-1 text-xs rounded-lg border border-slate-700 text-slate-400 hover:bg-slate-800">BASE64</button>
                             <button onclick="setSaltFormat('utf8')" id="salt-utf8"
-                                    class="px-3 py-1 text-xs rounded-lg border border-slate-700 text-slate-400 hover:bg-slate-800">UTF-8</button>
+                                class="px-3 py-1 text-xs rounded-lg border border-slate-700 text-slate-400 hover:bg-slate-800">UTF-8</button>
                         </div>
                     </div>
-                    <textarea id="salt" placeholder="Enter salt value..." 
-                              class="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-3 text-sm font-mono min-h-[80px] focus:outline-none focus:border-amber-500"></textarea>
+                    <textarea id="salt" placeholder="Enter salt value..."
+                        class="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-3 text-sm font-mono min-h-[80px] focus:outline-none focus:border-amber-500"></textarea>
                 </div>
 
                 <!-- Target Derived Key -->
@@ -187,13 +191,14 @@
                         </div>
                         <div class="flex gap-1">
                             <button onclick="setKeyFormat('hex')" id="key-hex"
-                                    class="px-3 py-1 text-xs rounded-lg border border-rose-500/50 bg-rose-500/10 text-rose-300">HEX</button>
+                                class="px-3 py-1 text-xs rounded-lg border border-rose-500/50 bg-rose-500/10 text-rose-300">HEX</button>
                             <button onclick="setKeyFormat('base64')" id="key-base64"
-                                    class="px-3 py-1 text-xs rounded-lg border border-slate-700 text-slate-400 hover:bg-slate-800">BASE64</button>
+                                class="px-3 py-1 text-xs rounded-lg border border-slate-700 text-slate-400 hover:bg-slate-800">BASE64</button>
                         </div>
                     </div>
-                    <textarea id="derivedKey" placeholder="Optional — if provided, derived key is also compared directly." 
-                              class="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-3 text-sm font-mono min-h-[80px] focus:outline-none focus:border-rose-500"></textarea>
+                    <textarea id="derivedKey"
+                        placeholder="Optional — if provided, derived key is also compared directly."
+                        class="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-3 text-sm font-mono min-h-[80px] focus:outline-none focus:border-rose-500"></textarea>
                 </div>
 
                 <!-- Encrypted Ciphertext -->
@@ -205,19 +210,20 @@
                         </div>
                         <div class="flex gap-1">
                             <button onclick="setCipherFormat('hex')" id="cipher-hex"
-                                    class="px-3 py-1 text-xs rounded-lg border border-slate-700 text-slate-400 hover:bg-slate-800">HEX</button>
+                                class="px-3 py-1 text-xs rounded-lg border border-slate-700 text-slate-400 hover:bg-slate-800">HEX</button>
                             <button onclick="setCipherFormat('base64')" id="cipher-base64"
-                                    class="px-3 py-1 text-xs rounded-lg border border-indigo-500/50 bg-indigo-500/10 text-indigo-300">BASE64</button>
+                                class="px-3 py-1 text-xs rounded-lg border border-indigo-500/50 bg-indigo-500/10 text-indigo-300">BASE64</button>
                         </div>
                     </div>
-                    <textarea id="encodedText" placeholder="Paste the encrypted ciphertext here..." 
-                              class="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-3 text-sm font-mono min-h-[80px] focus:outline-none focus:border-indigo-500"></textarea>
+                    <textarea id="encodedText" placeholder="Paste the encrypted ciphertext here..."
+                        class="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-3 text-sm font-mono min-h-[80px] focus:outline-none focus:border-indigo-500"></textarea>
 
                     <div class="grid grid-cols-2 gap-4 mt-4">
                         <!-- Cipher Mode -->
                         <div>
                             <label class="block text-xs text-slate-400 mb-1.5">Cipher Mode</label>
-                            <select id="cipherMode" onchange="toggleCipherOptions()" class="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500">
+                            <select id="cipherMode" onchange="toggleCipherOptions()"
+                                class="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500">
                                 <option value="AES-GCM">AES-GCM</option>
                                 <option value="AES-CBC">AES-CBC</option>
                                 <option value="AES-CTR">AES-CTR</option>
@@ -230,20 +236,21 @@
                                 <span>IV / Nonce</span>
                                 <div class="flex gap-1">
                                     <button onclick="setIVFormat('hex')" id="iv-hex"
-                                            class="px-2 py-0.5 text-xs rounded border border-indigo-500/50 bg-indigo-500/10 text-indigo-300">HEX</button>
+                                        class="px-2 py-0.5 text-xs rounded border border-indigo-500/50 bg-indigo-500/10 text-indigo-300">HEX</button>
                                     <button onclick="setIVFormat('base64')" id="iv-base64"
-                                            class="px-2 py-0.5 text-xs rounded border border-slate-700 text-slate-400 hover:bg-slate-800">B64</button>
+                                        class="px-2 py-0.5 text-xs rounded border border-slate-700 text-slate-400 hover:bg-slate-800">B64</button>
                                 </div>
                             </label>
                             <input type="text" id="iv" placeholder="IV / nonce bytes..."
-                                   class="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-2.5 text-sm font-mono focus:outline-none focus:border-indigo-500">
+                                class="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-2.5 text-sm font-mono focus:outline-none focus:border-indigo-500">
                         </div>
                     </div>
 
                     <!-- AES-GCM: tag length -->
                     <div id="gcm-options" class="mt-4">
                         <label class="block text-xs text-slate-400 mb-1.5">GCM Tag Length (bits)</label>
-                        <select id="gcm-tag-length" class="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500">
+                        <select id="gcm-tag-length"
+                            class="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500">
                             <option value="128" selected>128</option>
                             <option value="120">120</option>
                             <option value="112">112</option>
@@ -258,14 +265,14 @@
                     <div id="ctr-options" class="hidden mt-4">
                         <label class="block text-xs text-slate-400 mb-1.5">Counter Bit Length (1–128)</label>
                         <input type="number" id="ctr-counter-length" value="64" min="1" max="128"
-                               class="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-2.5 text-sm font-mono focus:outline-none focus:border-indigo-500">
+                            class="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-2.5 text-sm font-mono focus:outline-none focus:border-indigo-500">
                     </div>
 
                     <!-- IV Prepended Toggle -->
                     <div class="mt-3 flex items-center justify-between bg-slate-800/60 rounded-xl px-3 py-2.5">
                         <label for="iv-prepended" class="flex items-center gap-2 cursor-pointer select-none">
                             <input type="checkbox" id="iv-prepended" onchange="toggleIVPrepended()"
-                                   class="w-4 h-4 rounded accent-indigo-500 cursor-pointer">
+                                class="w-4 h-4 rounded accent-indigo-500 cursor-pointer">
                             <span class="text-xs text-slate-300">IV prepended to ciphertext</span>
                         </label>
                         <span id="iv-prepended-hint" class="text-xs text-slate-500 font-mono">first 12 B = nonce</span>
@@ -279,7 +286,8 @@
                         <h3 class="text-sm font-semibold text-slate-200">Password List</h3>
                     </div>
 
-                    <label class="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-slate-700 rounded-2xl cursor-pointer hover:border-violet-500/50 hover:bg-violet-500/5 transition-colors">
+                    <label
+                        class="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-slate-700 rounded-2xl cursor-pointer hover:border-violet-500/50 hover:bg-violet-500/5 transition-colors">
                         <div class="flex flex-col items-center justify-center">
                             <i class="fa-solid fa-upload text-slate-500 text-xl mb-2"></i>
                             <p id="password-count" class="text-xs text-slate-400">Upload passlist.txt</p>
@@ -287,7 +295,8 @@
                         <input type="file" id="file-upload" class="hidden" accept=".txt">
                     </label>
 
-                    <div id="password-preview" class="hidden mt-3 bg-slate-800/50 rounded-xl p-3 max-h-32 overflow-y-auto">
+                    <div id="password-preview"
+                        class="hidden mt-3 bg-slate-800/50 rounded-xl p-3 max-h-32 overflow-y-auto">
                         <p class="text-xs text-slate-500 mb-1.5">Preview (first 5):</p>
                         <div id="preview-list" class="text-xs font-mono text-slate-400 space-y-0.5"></div>
                     </div>
@@ -306,16 +315,14 @@
                     </div>
 
                     <div class="flex gap-3">
-                        <button id="start-btn"
-                                onclick="startEnumeration()"
-                                class="flex-1 flex items-center justify-center gap-2 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 font-medium py-3 px-4 rounded-2xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                        <button id="start-btn" onclick="startEnumeration()"
+                            class="flex-1 flex items-center justify-center gap-2 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 font-medium py-3 px-4 rounded-2xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                             <i class="fa-solid fa-play"></i>
                             <span>Start Enum</span>
                         </button>
 
-                        <button id="stop-btn"
-                                onclick="stopEnumeration()"
-                                class="hidden flex-1 flex items-center justify-center gap-2 bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/50 text-rose-300 font-medium py-3 px-4 rounded-2xl transition-colors">
+                        <button id="stop-btn" onclick="stopEnumeration()"
+                            class="hidden flex-1 flex items-center justify-center gap-2 bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/50 text-rose-300 font-medium py-3 px-4 rounded-2xl transition-colors">
                             <i class="fa-solid fa-stop"></i>
                             <span>Stop</span>
                         </button>
@@ -332,9 +339,9 @@
                             <span id="progress-text" class="font-mono">0 / 0</span>
                         </div>
                         <div class="h-2 bg-slate-800 rounded-full overflow-hidden">
-                            <div id="progress-bar" 
-                                 class="h-full bg-gradient-to-r from-cyan-500 to-emerald-500 transition-all duration-300"
-                                 style="width: 0%"></div>
+                            <div id="progress-bar"
+                                class="h-full bg-gradient-to-r from-cyan-500 to-emerald-500 transition-all duration-300"
+                                style="width: 0%"></div>
                         </div>
                         <div class="text-xs text-slate-500 text-right mt-1 font-mono" id="progress-percent">0%</div>
                     </div>
@@ -349,7 +356,8 @@
                             <p id="found-password" class="text-xl font-mono text-emerald-200 font-bold break-all"></p>
                             <div id="found-plaintext-wrap" class="hidden mt-3 pt-3 border-t border-emerald-500/30">
                                 <p class="text-xs text-emerald-400 mb-1">Decrypted Plaintext</p>
-                                <p id="found-plaintext" class="text-sm font-mono text-emerald-100 break-all whitespace-pre-wrap"></p>
+                                <p id="found-plaintext"
+                                    class="text-sm font-mono text-emerald-100 break-all whitespace-pre-wrap"></p>
                             </div>
                         </div>
                     </div>
@@ -404,19 +412,23 @@
                     <h3 class="text-sm font-semibold text-slate-200">HEX/Bin Reader</h3>
                 </div>
                 <div class="flex items-center gap-2">
-                    <button id="import-btn" class="px-4 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 rounded-xl transition-colors text-sm">
+                    <button id="import-btn"
+                        class="px-4 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 rounded-xl transition-colors text-sm">
                         <i class="fa-solid fa-upload mr-2"></i>Import
                     </button>
-                    <button id="save-btn" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 rounded-xl transition-colors text-sm">
+                    <button id="save-btn"
+                        class="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 rounded-xl transition-colors text-sm">
                         <i class="fa-solid fa-download mr-2"></i>Save
                     </button>
                 </div>
             </div>
 
             <!-- File info bar (hidden until file loaded) -->
-            <div id="file-info" class="hidden mb-3 flex items-center justify-between bg-slate-800/60 rounded-xl px-3 py-2">
+            <div id="file-info"
+                class="hidden mb-3 flex items-center justify-between bg-slate-800/60 rounded-xl px-3 py-2">
                 <div class="flex items-center gap-3 text-xs font-mono">
-                    <span class="text-slate-400"><i class="fa-solid fa-file mr-1.5 text-emerald-400"></i><span id="file-name" class="text-slate-200"></span></span>
+                    <span class="text-slate-400"><i class="fa-solid fa-file mr-1.5 text-emerald-400"></i><span
+                            id="file-name" class="text-slate-200"></span></span>
                     <span class="text-slate-600">|</span>
                     <span id="file-size" class="text-slate-400"></span>
                     <span class="text-slate-600">|</span>
@@ -426,8 +438,8 @@
 
             <input type="file" id="file-input" class="hidden" />
             <textarea id="output" readonly
-                      class="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-3 text-sm font-mono min-h-[240px] max-h-[480px] overflow-y-auto focus:outline-none resize-y"
-                      placeholder="Import a binary or text file to inspect its contents..."></textarea>
+                class="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-xl px-3 py-3 text-sm font-mono min-h-[240px] max-h-[480px] overflow-y-auto focus:outline-none resize-y"
+                placeholder="Import a binary or text file to inspect its contents..."></textarea>
         </div>
     </div>
 
@@ -487,7 +499,7 @@
             try {
                 if (saltFormat === 'hex') return hexToBytes(salt);
                 if (saltFormat === 'base64') return base64ToBytes(salt);
-            } catch (e) {}
+            } catch (e) { }
             return new TextEncoder().encode(salt);
         }
 
@@ -514,7 +526,7 @@
         function setSaltFormat(format) {
             saltFormat = format;
 
-            document.getElementById('salt-hex').className = format === 'hex' 
+            document.getElementById('salt-hex').className = format === 'hex'
                 ? 'px-3 py-1 text-xs rounded-lg border border-amber-500/50 bg-amber-500/10 text-amber-300'
                 : 'px-3 py-1 text-xs rounded-lg border border-slate-700 text-slate-400 hover:bg-slate-800';
 
@@ -596,12 +608,12 @@
             try {
                 if (infoFormat === 'hex') return hexToBytes(text);
                 if (infoFormat === 'base64') return base64ToBytes(text);
-            } catch (e) {}
+            } catch (e) { }
             return new TextEncoder().encode(text);
         }
 
         // ==================== passlist UPLOAD ====================
-        document.getElementById('file-upload').addEventListener('change', async function(e) {
+        document.getElementById('file-upload').addEventListener('change', async function (e) {
             const file = e.target.files[0];
             if (!file) return;
 
@@ -911,7 +923,7 @@
         function updateStats() {
             const tested = results.length;
             const matches = results.filter(r => r.match).length;
-            const avgTime = tested > 0 
+            const avgTime = tested > 0
                 ? (results.reduce((acc, r) => acc + r.duration, 0) / tested).toFixed(1)
                 : '0';
 
@@ -932,9 +944,9 @@
 
             div.innerHTML = `
                 <div class="flex-shrink-0">
-                    ${result.match 
-                        ? '<i class="fa-solid fa-check-circle text-emerald-400 w-3"></i>' 
-                        : '<i class="fa-solid fa-times-circle text-slate-600 w-3"></i>'}
+                    ${result.match
+                    ? '<i class="fa-solid fa-check-circle text-emerald-400 w-3"></i>'
+                    : '<i class="fa-solid fa-times-circle text-slate-600 w-3"></i>'}
                 </div>
                 <span class="text-slate-500 w-8">#${result.index}</span>
                 <span class="text-slate-300 flex-1 truncate">${result.password}</span>
@@ -966,60 +978,60 @@
             card.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
 
-function initializeUI() {
-    document.getElementById('algorithm').value = 'PBKDF2';
-    document.getElementById('hashFunction').value = 'SHA-256';
-    document.getElementById('iterations').value = '100000';
-    document.getElementById('keyLength').value = '32';
+        function initializeUI() {
+            document.getElementById('algorithm').value = 'PBKDF2';
+            document.getElementById('hashFunction').value = 'SHA-256';
+            document.getElementById('iterations').value = '100000';
+            document.getElementById('keyLength').value = '32';
 
-    setSaltFormat('hex');
-    setKeyFormat('hex');
-    setCipherFormat('base64');
-    setIVFormat('hex');
+            setSaltFormat('hex');
+            setKeyFormat('hex');
+            setCipherFormat('base64');
+            setIVFormat('hex');
 
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter' && !isRunning) {
-            const startBtn = document.getElementById('start-btn');
-            if (!startBtn.classList.contains('hidden')) {
-                startEnumeration();
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' && !isRunning) {
+                    const startBtn = document.getElementById('start-btn');
+                    if (!startBtn.classList.contains('hidden')) {
+                        startEnumeration();
+                    }
+                }
+                if (e.key === 'Escape' && isRunning) {
+                    stopEnumeration();
+                }
+            });
+
+            function checkCanStart() {
+                const salt = document.getElementById('salt').value.trim();
+                const derivedKey = document.getElementById('derivedKey').value.trim();
+                const ciphertext = document.getElementById('encodedText').value.trim();
+                const warning = document.getElementById('warning-text');
+
+                if (!salt || (!derivedKey && !ciphertext) || passwordList.length === 0) {
+                    warning.classList.remove('hidden');
+                } else {
+                    warning.classList.add('hidden');
+                }
             }
+
+            ['salt', 'derivedKey', 'encodedText'].forEach(id => {
+                document.getElementById(id).addEventListener('input', checkCanStart);
+            });
+
         }
-        if (e.key === 'Escape' && isRunning) {
-            stopEnumeration();
-        }
-    });
 
-    function checkCanStart() {
-        const salt = document.getElementById('salt').value.trim();
-        const derivedKey = document.getElementById('derivedKey').value.trim();
-        const ciphertext = document.getElementById('encodedText').value.trim();
-        const warning = document.getElementById('warning-text');
+        initializeUI();
 
-        if (!salt || (!derivedKey && !ciphertext) || passwordList.length === 0) {
-            warning.classList.remove('hidden');
-        } else {
-            warning.classList.add('hidden');
-        }
-    }
-
-    ['salt', 'derivedKey', 'encodedText'].forEach(id => {
-        document.getElementById(id).addEventListener('input', checkCanStart);
-    });
-
-}
-
-initializeUI();
-
-      // ==================== HEX/Bin Reader FUNCTIONS ====================
+        // ==================== HEX/Bin Reader FUNCTIONS ====================
         let binDetectedEncoding = '';
 
         function detectBestEncoding(bytes) {
             const encodings = [
                 'utf-8', 'iso-8859-1', 'windows-1252',
-                'utf-16le', 'utf-16be', 'big5', 'gbk', 'shift_jis'
+                'utf-16le', 'utf-16be', 'ChaCha20-Poly1305', 'big5', 'gbk', 'ChaCha20-Poly1305', 'shift_jis'
             ];
             let bestEnc = 'utf-8';
-            let bestScore = -1;
+            let bestScore = -9;
 
             for (const enc of encodings) {
                 try {
@@ -1045,6 +1057,10 @@ initializeUI();
             return printable / text.length;
         }
 
+        function replaceSpecifiedChars(str) {
+            return str.replace(/[?!@#$%*~^=+<>\\]/g, '.');
+        }
+
         function cleanHex(text) {
             let result = '';
             for (let i = 0; i < text.length; i++) {
@@ -1055,11 +1071,11 @@ initializeUI();
                     result += '.';
                 }
             }
-            return result.replace(/[?!@#$%^&*¥£€=+<>]/g, '')
+            return result.replaceSpecifiedChars;
         }
 
         function buildHexDump(bytes) {
-            const bytesPerRow = 16;
+            const bytesPerRow = 32;
             const lines = [];
             for (let offset = 0; offset < bytes.length; offset += bytesPerRow) {
                 const row = bytes.slice(offset, offset + bytesPerRow);
@@ -1111,4 +1127,5 @@ initializeUI();
         };
     </script>
 </body>
+
 </html>
