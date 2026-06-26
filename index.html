@@ -4,12 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wallet Backup Parser</title>
+    <title>Wallet Backup Parser - Enhanced</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/bip39@3.1.0/src/index.min.js" defer></script>
     <script type="module">
-        // Import cryptographic hash functions and utilities from @noble/hashes
         import { sha256 } from 'https://esm.sh/@noble/hashes@1.7.1/sha256';
         import { sha512 } from 'https://esm.sh/@noble/hashes@1.7.1/sha512';
         import { sha3 } from 'https://esm.sh/@noble/hashes@1.7.1/sha3';
@@ -17,12 +16,10 @@
         import { hmac } from 'https://esm.sh/@noble/hashes@1.7.1/hmac';
         import { pbkdf2 } from 'https://esm.sh/@noble/hashes@1.7.1/pbkdf2';
         import { blake2b } from 'https://esm.sh/@noble/hashes@1.7.1/blake2b';
-
-        // Import elliptic curve cryptography modules from @noble/curves
         import { secp256k1 } from 'https://esm.sh/@noble/curves@1.8.1/secp256k1';
         import { ed25519 } from 'https://esm.sh/@noble/curves@1.8.1/ed25519';
+        import { HDKey } from 'https://esm.sh/@scure/hdkey@2.1.2'; // For BIP32 derivation
 
-        // Expose modules to the global scope for easier access in script tags
         window.sha256 = sha256;
         window.sha512 = sha512;
         window.sha3 = sha3;
@@ -32,6 +29,7 @@
         window.blake2b = blake2b;
         window.secp256k1 = secp256k1;
         window.ed25519 = ed25519;
+        window.HDKey = HDKey;
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
@@ -57,7 +55,6 @@
 
         .dark .glass {
             background: rgba(30, 41, 59, 0.95);
-            /* Darker background for dark mode */
         }
 
         .section-header {
@@ -99,11 +96,27 @@
 
         .dark .result-row:hover {
             background-color: #334155;
-            /* Darker hover for dark mode */
         }
 
         .status-dot {
             animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(1.5);
+                opacity: 0.7;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
         }
 
         .file-drop-zone {
@@ -129,35 +142,29 @@
             line-height: 1.25rem;
         }
 
-        /* Custom Scrollbar for better UX */
         ::-webkit-scrollbar {
             width: 8px;
         }
 
         ::-webkit-scrollbar-track {
             background: #f1f5f9;
-            /* Light grey track */
         }
 
         .dark ::-webkit-scrollbar-track {
             background: #1e293b;
-            /* Darker grey track */
         }
 
         ::-webkit-scrollbar-thumb {
             background: #94a3b8;
-            /* Medium grey thumb */
             border-radius: 4px;
         }
 
         .dark ::-webkit-scrollbar-thumb {
             background: #64748b;
-            /* Darker thumb */
         }
 
         ::-webkit-scrollbar-thumb:hover {
             background: #6366f1;
-            /* Primary color on hover */
         }
     </style>
 </head>
@@ -180,7 +187,7 @@
                 <div class="flex items-center gap-x-2">
                     <div class="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-3xl flex items-center text-sm">
                         <div class="w-2 h-2 bg-emerald-500 rounded-full mr-2 status-dot"></div>
-                        <span class="text-slate-600 dark:text-slate-400 text-xs font-medium">v2.4.1</span>
+                        <span class="text-slate-600 dark:text-slate-400 text-xs font-medium">v3.0.0</span>
                     </div>
                 </div>
             </div>
@@ -193,7 +200,7 @@
             <div>
                 <h1 class="text-4xl font-semibold tracking-tighter">Wallet Backup Parser</h1>
                 <p class="text-slate-600 dark:text-slate-400 mt-2">Parse .ldb, .json, .dat and keystore files securely
-                    client-side.</p>
+                    client-side with advanced cryptographic utilities.</p>
             </div>
 
             <div class="mt-4 md:mt-0 flex items-center gap-x-3">
@@ -436,6 +443,18 @@
                         </button>
                     </div>
                 </div>
+
+                <div id="modal-extended-key-section" class="hidden">
+                    <div class="text-xs font-medium text-slate-500 mb-1">EXTENDED KEY (xprv/xpub)</div>
+                    <div class="flex items-center gap-x-2">
+                        <div id="modal-extended-key"
+                            class="mono text-sm flex-1 bg-slate-100 dark:bg-slate-800 p-3 rounded-2xl break-all"></div>
+                        <button onclick="copyToClipboard('modal-extended-key')"
+                            class="px-3 py-2 text-xs bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-2xl hover:bg-slate-50">
+                            <i class="fa-solid fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <div class="px-6 py-4 border-t flex justify-end gap-x-3">
@@ -451,29 +470,70 @@
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js"></script>
 
     <script>
-        /**
-         * Validates an Ethereum address using a regular expression.
-         * @param {string} address - The address to validate.
-         * @returns {boolean} True if the address is valid, false otherwise.
-         */
+        // --- Cryptographic Utilities ---
+        async function deriveAddressFromPrivateKey(privateKeyHex) {
+            try {
+                const wallet = new ethers.Wallet(privateKeyHex);
+                return wallet.address;
+            } catch (e) {
+                console.error("Error deriving address from private key:", e);
+                return null;
+            }
+        }
+
+        async function deriveAddressFromMnemonic(mnemonic, path = "m/44'/60'/0'/0/0", network = ethers.Network.from("homestead")) {
+            try {
+                const wallet = ethers.Wallet.fromMnemonic(mnemonic, path);
+                const provider = new ethers.JsonRpcProvider("https://cloudflare-eth.com", network); // Example provider
+                const connectedWallet = wallet.connect(provider);
+                return connectedWallet.address;
+            } catch (e) {
+                console.error("Error deriving address from mnemonic:", e);
+                return null;
+            }
+        }
+
+        function deriveExtendedKey(mnemonic, path = "m/44'/60'/0'/0/0") {
+            try {
+                const hdkey = new HDKey();
+                hdkey.fromMnemonic(mnemonic);
+                const child = hdkey.derive(path);
+                return {
+                    xprv: child.privateKey ? child.privateKey.toString('hex') : null, // Extended Private Key
+                    xpub: child.publicKey ? child.publicKey.toString('hex') : null,  // Extended Public Key
+                    chainCode: child.chainCode.toString('hex'),
+                    depth: child.depth,
+                    index: child.index,
+                    parentFingerprint: child.parentFingerprint.toString('hex')
+                };
+            } catch (e) {
+                console.error("Error deriving extended key:", e);
+                return null;
+            }
+        }
+
+
+        // --- Validation Functions ---
         function isValidEthereumAddress(address) {
-            return /^0x[a-fA-F0-9]{40}$/.test(address);
+            return /^0x[a-fA-F0-9]{40}$/.test(address.toLowerCase());
         }
 
-        /**
-         * Validates a private key (hexadecimal, 64 characters).
-         * @param {string} key - The private key to validate.
-         * @returns {boolean} True if the key is valid, false otherwise.
-         */
         function isValidPrivateKey(key) {
-            return /^[a-fA-F0-9]{64}$/.test(key);
+            const cleanKey = key.startsWith('0x') ? key.slice(2) : key;
+            const regexPatterns = [
+                /^[a-fA-F0-9]{64}$/,
+                /^[A-Fa-f0-9]{64}$/,
+                  /\(?:[13][a-km-zA-HJ-NP-Z1-9]{26,35})\b/g,
+  /\bc1[a-z0-9]{39,59}\b/g,
+  /\b0x[a-fA-F0-9]{64}\b/g,
+  /\b[0-9a-fA-F]{64}\b/g,
+/\b0x[0-9a-fA-F]{40}\b/, /\b6P[1-9A-HJ-NP-Za-km-z]{56}\b/g, /\b[0-9a-fA-F]{64}\b/g,
+  /\b[1-9A-HJ-NP-Za-km-z]{32,44}\b/g, /\b[1-9A-HJ-NP-Za-km-z]{32,44}\b/g, /\b[0-9a-fA-F]{64}\b/g, /\b[1-9A-HJ-NP-Za-km-z]{32,44}\b/g,
+  /\b[1-9A-HJ-NP-Za-km-z]{32,44}\b/g, /\b([5KL][1-9A-HJ-NP-Za-km-z]{50,51})\b/g
+            ];
+            return regexPatterns.some(pattern => pattern.test(cleanKey));
         }
 
-        /**
-         * Validates a mnemonic phrase using the bip39 library.
-         * @param {string} mnemonic - The mnemonic phrase to validate.
-         * @returns {boolean} True if the mnemonic is valid, false otherwise.
-         */
         function isValidMnemonic(mnemonic) {
             try {
                 return bip39.validateMnemonic(mnemonic);
@@ -483,19 +543,16 @@
             }
         }
 
-        /**
-         * Performs a basic validation of a keystore object structure.
-         * @param {object} data - The data object to validate.
-         * @returns {boolean} True if the structure appears valid, false otherwise.
-         */
         function isValidKeystore(data) {
             return data && typeof data === 'object' && data.crypto && typeof data.crypto === 'object' && data.id && typeof data.id === 'string' && data.version !== undefined;
         }
 
-        /**
-         * Initializes Tailwind CSS dark mode if a preference is detected or defaults.
-         * This function is called on load to ensure the correct theme is applied.
-         */
+        function isValidExtendedKey(key) {
+            return /^xprv[0-9a-zA-Z]{111}$/.test(key) || /^xpub[0-9a-zA-Z]{111}$/.test(key);
+        }
+
+
+        // --- UI Initialization and Event Handlers ---
         function initializeTailwind() {
             const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
             const storedTheme = localStorage.getItem('theme');
@@ -507,95 +564,85 @@
             }
         }
 
-        let parsedWallets = []; // Array to store all parsed wallet data.
-        let currentFile = null; // Holds the currently processed file object.
+        let parsedWallets = [];
+        let currentFile = null;
 
-        /**
-         * Initializes the application: sets up theme, drag and drop, and file input listeners.
-         */
         function init() {
             initializeTailwind();
             setupDragAndDrop();
             setupFileInput();
+            setupModalCloseHandlers();
         }
 
-        /**
-         * Sets up event listeners for drag-and-drop functionality on the drop zone.
-         */
         function setupDragAndDrop() {
             const dropZone = document.getElementById('drop-zone');
 
             dropZone.addEventListener('dragover', (e) => {
-                e.preventDefault(); // Prevent default behavior to allow dropping
-                dropZone.classList.add('dragover'); // Add visual feedback
+                e.preventDefault();
+                dropZone.classList.add('dragover');
             });
 
             dropZone.addEventListener('dragleave', () => {
-                dropZone.classList.remove('dragover'); // Remove visual feedback
+                dropZone.classList.remove('dragover');
             });
 
             dropZone.addEventListener('drop', (e) => {
-                e.preventDefault(); // Prevent default browser behavior
-                dropZone.classList.remove('dragover'); // Remove visual feedback
+                e.preventDefault();
+                dropZone.classList.remove('dragover');
 
                 if (e.dataTransfer.files.length > 0) {
-                    handleFile(e.dataTransfer.files[0]); // Process the dropped file
+                    handleFile(e.dataTransfer.files[0]);
                 }
             });
 
-            // Trigger file input click when drop zone is clicked
             dropZone.addEventListener('click', () => {
                 document.getElementById('file-input').click();
             });
         }
 
-        /**
-         * Sets up the event listener for the hidden file input element.
-         */
         function setupFileInput() {
             const fileInput = document.getElementById('file-input');
             fileInput.addEventListener('change', (e) => {
                 if (e.target.files.length > 0) {
-                    handleFile(e.target.files[0]); // Process the selected file
+                    handleFile(e.target.files[0]);
                 }
             });
         }
 
-        /**
-         * Handles the file processing flow: reads file, parses content, displays results or errors.
-         * @param {File} file - The file object to process.
-         */
-        async function handleFile(file) {
-            currentFile = file; // Store the current file for later reference
+        function setupModalCloseHandlers() {
+            document.getElementById('wallet-modal').addEventListener('click', (event) => {
+                if (event.target.id === 'wallet-modal') {
+                    closeModal();
+                }
+            });
+        }
 
-            // Reset UI elements to a clean state before processing
+
+        // --- File Handling and Parsing ---
+        async function handleFile(file) {
+            currentFile = file;
+
             document.getElementById('results-section').classList.add('hidden');
             document.getElementById('error-section').classList.add('hidden');
 
             try {
-                const content = await readFileContent(file); // Read file content
-                const wallets = await parseWalletFile(content, file.name); // Parse the content
+                const content = await readFileContent(file);
+                const wallets = await parseWalletFile(content, file.name);
 
                 if (wallets.length === 0) {
                     showError("No wallet data found in the file. Please check the file format and content.");
                     return;
                 }
 
-                parsedWallets = wallets; // Update the global array of parsed wallets
-                displayResults(file, wallets); // Display the parsed results
+                parsedWallets = wallets;
+                displayResults(file, wallets);
 
             } catch (error) {
                 console.error("File handling error:", error);
-                // Display a user-friendly error message
                 showError(error.message || "An unexpected error occurred while processing the file.");
             }
         }
 
-        /**
-         * Reads the content of a given File object. Handles both text and array buffer formats.
-         * @param {File} file - The file to read.
-         * @returns {Promise<string|ArrayBuffer>} A promise that resolves with the file content.
-         */
         function readFileContent(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -606,8 +653,7 @@
 
                 reader.onerror = () => reject(new Error(`Failed to read file: ${file.name}`));
 
-                // Read as text for JSON, as ArrayBuffer for binary files
-                if (file.name.toLowerCase().endsWith('.json')) {
+                if (file.name.toLowerCase().endsWith('.json') || file.name.toLowerCase().endsWith('.keystore')) {
                     reader.readAsText(file);
                 } else {
                     reader.readAsArrayBuffer(file);
@@ -615,417 +661,755 @@
             });
         }
 
-        /**
-         * Parses the raw file content based on the filename extension.
-         * It delegates parsing to specific handler functions like parseJSONKeystore or extractFromBinary.
-         * @param {string|ArrayBuffer} content - The content of the file.
-         * @param {string} filename - The name of the file being processed.
-         * @returns {Promise<Array<object>>} A promise that resolves with an array of parsed wallet objects.
-         */
         async function parseWalletFile(content, filename) {
-            const wallets = []; // Initialize an empty array to store wallet objects
+            const wallets = [];
+            const lowerFilename = filename.toLowerCase();
 
             try {
-                const lowerFilename = filename.toLowerCase();
-
-                if (lowerFilename.endsWith('.json')) {
-                    // JSON files are parsed as text and then processed as keystore/private key data
+                if (lowerFilename.endsWith('.json') || lowerFilename.endsWith('.keystore')) {
                     const data = JSON.parse(content);
-                    const parsed = parseJSONKeystore(data);
+                    const parsed = parseJSONData(data);
                     if (parsed) wallets.push(parsed);
                 } else if (lowerFilename.endsWith('.dat') || lowerFilename.endsWith('.ldb')) {
-                    // Binary files (DAT, LDB) are processed as ArrayBuffer
-                    const buffer = new Uint8Array(content); // Ensure it's a typed array
+                    const buffer = new Uint8Array(content);
                     const extracted = extractFromBinary(buffer);
-                    wallets.push(...extracted); // Add extracted wallets to the list
+                    wallets.push(...extracted);
                 } else {
-                    // Attempt to parse as JSON first, then fall back to binary parsing if JSON fails
+                    // Attempt JSON parsing first, then binary interpretation
                     try {
                         const data = JSON.parse(content);
-                        const parsed = parseJSONKeystore(data);
+                        const parsed = parseJSONData(data);
                         if (parsed) wallets.push(parsed);
                     } catch (jsonError) {
-                        // If JSON parsing fails, assume it's a binary format and try to decode as text
                         console.warn("JSON parsing failed, attempting binary interpretation for:", filename, jsonError);
-                        // Use TextEncoder to convert string content to a Uint8Array if it was read as text
                         const buffer = typeof content === 'string' ? new TextEncoder().encode(content) : new Uint8Array(content);
                         const extracted = extractFromBinary(buffer);
                         wallets.push(...extracted);
                     }
                 }
             } catch (error) {
-                console.error("Error during file parsing:", error); // Log the specific parsing error
-                // Throw a more general error if the file format is completely unrecognized or corrupted
+                console.error("Error during file parsing:", error);
                 throw new Error("Unable to parse file format. Ensure the file is a supported type (.json, .dat, .ldb, keystore).");
             }
-
-            return wallets; // Return the array of found wallets
+            return wallets;
         }
 
-        /**
-         * Parses JSON content to identify Ethereum keystore objects, private keys, or mnemonics.
-         * Uses helper validation functions for robustness.
-         * @param {object} data - The parsed JSON data.
-         * @returns {object|null} A wallet object if found, otherwise null.
-         */
-        function parseJSONKeystore(data) {
-            // Check for standard Ethereum V3 keystore format
-            if (data.address && data.crypto && isValidKeystore(data)) {
+        async function parseJSONData(data) {
+            if (isValidKeystore(data)) {
+                const address = data.address ? ('0x' + data.address.toLowerCase()) : 'Unknown';
+                const derivedAddress = await deriveAddressFromPrivateKey(data.crypto.privateKey); // Attempt derivation if PK exists
                 return {
-                    address: '0x' + data.address.toLowerCase(), // Normalize address format
+                    address: address,
+                    derivedAddress: derivedAddress || address, // Use derived if possible, else the one from file
                     type: 'Ethereum Keystore (V3)',
-                    network: 'Ethereum', // Default to Ethereum, could be extended
-                    encrypted: true, // Keystore files are always encrypted
-                    data: data // Store original data for potential future use
+                    network: 'Ethereum',
+                    encrypted: true,
+                    data: data,
+                    privateKey: null, // Keystore is encrypted
+                    mnemonic: null,
+                    extendedKey: null
                 };
             }
 
-            // Check for a simple JSON object containing a private key
             if (data.privateKey && isValidPrivateKey(data.privateKey)) {
+                const address = await deriveAddressFromPrivateKey(data.privateKey);
                 return {
-                    address: 'Derived from private key', // Address cannot be directly determined without derivation
+                    address: address || 'Derived from private key',
+                    derivedAddress: address,
                     type: 'Private Key (JSON)',
-                    network: 'Unknown', // Network is not specified in this format
-                    privateKey: data.privateKey.toLowerCase(), // Store private key in lowercase hex
-                    encrypted: false, // Private key in JSON is typically exposed
-                    data: data
+                    network: 'Unknown',
+                    privateKey: data.privateKey.toLowerCase(),
+                    encrypted: false,
+                    data: data,
+                    mnemonic: null,
+                    extendedKey: null
                 };
             }
 
-            // Check for a simple JSON object containing a mnemonic phrase
             if (data.mnemonic && isValidMnemonic(data.mnemonic)) {
+                const mnemonic = data.mnemonic.toLowerCase();
+                const derivedAddress = await deriveAddressFromMnemonic(mnemonic);
+                const extendedKeyInfo = deriveExtendedKey(mnemonic);
                 return {
-                    address: 'Derived from mnemonic', // Address depends on derivation path and network
+                    address: derivedAddress || 'Derived from mnemonic',
+                    derivedAddress: derivedAddress,
                     type: 'Mnemonic (JSON)',
-                    network: 'Multiple', // Mnemonic can be used for various networks
-                    mnemonic: data.mnemonic.toLowerCase(), // Store mnemonic in lowercase
-                    encrypted: false, // Mnemonic in JSON is typically exposed
+                    network: 'Multiple',
+                    privateKey: null, // Private key not directly exposed here
+                    mnemonic: mnemonic,
+                    extendedKey: extendedKeyInfo ? {
+                        xprv: extendedKeyInfo.xprv ? `xprv${extendedKeyInfo.xprv}` : null,
+                        xpub: extendedKeyInfo.xpub ? `xpub${extendedKeyInfo.xpub}` : null
+                    } : null,
                     data: data
                 };
             }
 
-            // Return null if no known wallet format is detected in the JSON
-            return null;
-        }
+            if (data.xprv && isValidExtendedKey(data.xprv)) {
+                const hdkey = new HDKey();
+                try {
+                    hdkey.fromExtendedKey(data.xprv);
+                    const address = await deriveAddressFromPrivateKey(hdkey.privateKey.toString('hex'));
+                    return {
+                        address: address || 'Derived from xprv',
+                        derivedAddress: address,
+                        type: 'Extended Private Key (JSON)',
+                        network: 'Unknown',
+                        privateKey: hdkey.privateKey.toString('hex'),
+                        mnemonic: null,
+                        extendedKey: { xprv: data.xprv, xpub: hdkey.publicKey.toString('hex') },
+                        data: data
+                    };
+                }```html
+<!DOCTYPE html>
+<html lang="en">
 
-        /**
-         * Extracts potential wallet information (addresses, private keys, mnemonics) from binary data.
-         * Uses regular expressions to find patterns within the raw byte stream interpreted as text.
-         * @param {Uint8Array} buffer - The binary content of the file.
-         * @returns {Array<object>} An array of wallet objects found in the binary data.
-         */
-        function extractFromBinary(buffer) {
-            const wallets = [];
-            // Decode the buffer as UTF-8 to search for patterns. This might not be perfect for all binary formats.
-            const text = new TextDecoder().decode(buffer);
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Wallet Backup Parser</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/bip39@3.1.0/src/index.min.js" defer></script>
+    <script type="module">
+        // Enhanced import for broader cryptographic utility
+        import {
+            sha256,
+            sha512,
+            sha3_256,
+            sha3_512,
+            ripemd160
+        } from 'https://esm.sh/@noble/hashes@1.7.1/sha3';
+        import {
+            hmac
+        } from 'https://esm.sh/@noble/hashes@1.7.1/hmac';
+        import {
+            pbkdf2
+        } from 'https://esm.sh/@noble/hashes@1.7.1/pbkdf2';
+        import {
+            blake2b
+        } from 'https://esm.sh/@noble/hashes@1.7.1/blake2b';
+        import {
+            secp256k1
+        } from 'https://esm.sh/@noble/curves@1.8.1/secp256k1';
+        import {
+            ed25519
+        } from 'https://esm.sh/@noble/curves@1.8.1/ed25519';
+        import {
+            HDKey
+        } from 'https://esm.sh/hdkey@0.5.0'; // For BIP32/BIP44 derivation
 
-            // Regular expression for Ethereum addresses (0x followed by 40 hex characters)
-            const ethAddressRegex = /0x[a-fA-F0-9]{40}/g;
-            const ethMatches = text.match(ethAddressRegex);
-            if (ethMatches) {
-                ethMatches.forEach(addr => {
-                    if (isValidEthereumAddress(addr)) {
-                        // Add valid Ethereum addresses found in binary data
-                        wallets.push({
-                            address: addr.toLowerCase(),
-                            type: 'Ethereum Address (Binary)',
-                            network: 'Ethereum', // Assumed network for standard addresses
-                            encrypted: false, // Addresses themselves are not encrypted
-                            source: 'binary' // Indicate source of data
-                        });
-                    }
-                });
-            }
-
-            // Regular expression for 64-character hexadecimal strings (potential private keys)
-            const privKeyRegex = /[a-fA-F0-9]{64}/g;
-            const privMatches = text.match(privKeyRegex);
-            if (privMatches) {
-                privMatches.forEach(key => {
-                    // Validate the key and ensure it's not already added as an address or another key
-                    if (isValidPrivateKey(key) && !wallets.some(w => w.privateKey === key.toLowerCase())) {
-                        wallets.push({
-                            address: 'Derived from private key', // Address is not directly present
-                            type: 'Private Key (Binary)',
-                            network: 'Unknown', // Network cannot be determined from raw key alone
-                            privateKey: key.toLowerCase(), // Store private key in lowercase
-                            encrypted: false, // Assumed unencrypted in this context
-                            source: 'binary'
-                        });
-                    }
-                });
-            }
-
-            // Regular expression for BIP39 mnemonic phrases (12 or 24 words, space-separated)
-            // This regex is a simplified attempt and might capture false positives.
-            // A more robust approach would involve checking against a known wordlist.
-            const mnemonicRegex = /(?:^|\s)([a-z]+(?:\s[a-z]+){11,23})$/gi;
-            const mnemonicMatches = text.match(mnemonicRegex);
-            if (mnemonicMatches) {
-                mnemonicMatches.forEach(mnemonic => {
-                    const trimmedMnemonic = mnemonic.trim(); // Remove leading/trailing spaces
-                    if (isValidMnemonic(trimmedMnemonic)) {
-                        // Add valid mnemonic phrases found in binary data
-                        wallets.push({
-                            address: 'Derived from mnemonic', // Address depends on derivation path
-                            type: 'Mnemonic (Binary)',
-                            network: 'Multiple', // Mnemonic can be used for various networks
-                            mnemonic: trimmedMnemonic.toLowerCase(), // Store mnemonic in lowercase
-                            encrypted: false, // Assumed unencrypted
-                            source: 'binary'
-                        });
-                    }
-                });
-            }
-
-            return wallets; // Return all found wallet data
-        }
-
-        /**
-         * Updates the UI to display the parsing results, including file info and statistics.
-         * @param {File} file - The file object that was processed.
-         * @param {Array<object>} wallets - The array of parsed wallet objects.
-         */
-        function displayResults(file, wallets) {
-            document.getElementById('results-section').classList.remove('hidden'); // Show the results section
-
-            // Update file information display
-            document.getElementById('file-name').innerHTML = `
-                <span class="font-medium">${file.name}</span>
-                <span class="text-xs">(${formatFileSize(file.size)})</span>
-            `;
-
-            // Update statistics cards
-            document.getElementById('wallet-count').textContent = wallets.length;
-            document.getElementById('file-size').textContent = formatFileSize(file.size);
-
-            // Calculate and display the number of unique networks
-            const networks = new Set(wallets.map(w => w.network));
-            document.getElementById('network-count').textContent = networks.size;
-
-            // Calculate and display the count of encrypted wallets
-            const encrypted = wallets.filter(w => w.encrypted).length;
-            document.getElementById('encrypted-count').textContent = encrypted;
-
-            renderWalletsTable(wallets); // Render the table of detected wallets
-        }
-
-        /**
-         * Renders the table of detected wallets with their details.
-         * @param {Array<object>} wallets - The array of parsed wallet objects.
-         */
-        function renderWalletsTable(wallets) {
-            const tbody = document.getElementById('wallets-table');
-            tbody.innerHTML = ''; // Clear existing table rows
-
-            wallets.forEach((wallet, index) => {
-                const row = document.createElement('tr');
-                row.className = 'result-row'; // Add class for hover effects
-
-                // Determine the status badge based on whether the wallet is encrypted
-                const status = wallet.encrypted ?
-                    `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">Encrypted</span>` :
-                    `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">Plain</span>`;
-
-                // Create the table row HTML
-                row.innerHTML = `
-                    <td class="px-6 py-4 text-slate-500">${index + 1}</td>
-                    <td class="px-6 py-4">
-                        <div class="font-mono text-sm">${wallet.address}</div>
-                    </td>
-                    <td class="px-6 py-4">
-                        <span class="px-3 py-1 text-xs font-medium bg-slate-100 dark:bg-slate-700 rounded-2xl">${wallet.type}</span>
-                    </td>
-                    <td class="px-6 py-4 text-sm">${wallet.network}</td>
-                    <td class="px-6 py-4">${status}</td>
-                    <td class="px-6 py-4 text-right">
-                        <button onclick="showWalletModal(${index})"
-                                class="px-3 py-1.5 text-xs font-medium bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 rounded-2xl transition-colors">
-                            View
-                        </button>
-                    </td>
-                `;
-
-                tbody.appendChild(row); // Append the new row to the table body
-            });
-        }
-
-        /**
-         * Opens the wallet detail modal and populates it with the selected wallet's information.
-         * @param {number} index - The index of the wallet in the `parsedWallets` array.
-         */
-        function showWalletModal(index) {
-            const wallet = parsedWallets[index]; // Get the wallet data
-            const modal = document.getElementById('wallet-modal'); // Get the modal element
-
-            // Populate modal fields
-            document.getElementById('modal-address').textContent = wallet.address;
-            document.getElementById('modal-type').textContent = wallet.type;
-            document.getElementById('modal-network').textContent = wallet.network;
-
-            // Show/hide private key section based on availability
-            const pkSection = document.getElementById('modal-private-key-section');
-            if (wallet.privateKey) {
-                document.getElementById('modal-private-key').textContent = wallet.privateKey;
-                pkSection.style.display = 'block'; // Make section visible
-            } else {
-                pkSection.style.display = 'none'; // Hide section
-            }
-
-            // Show/hide mnemonic section based on availability
-            const mnemonicSection = document.getElementById('modal-mnemonic-section');
-            if (wallet.mnemonic) {
-                document.getElementById('modal-mnemonic').textContent = wallet.mnemonic;
-                mnemonicSection.style.display = 'block'; // Make section visible
-            } else {
-                mnemonicSection.style.display = 'none'; // Hide section
-            }
-
-            modal.classList.remove('hidden'); // Make modal visible
-            modal.style.display = 'flex'; // Ensure flex layout for centering
-        }
-
-        /**
-         * Closes the wallet detail modal.
-         */
-        function closeModal() {
-            const modal = document.getElementById('wallet-modal');
-            modal.style.display = 'none'; // Hide modal
-            modal.classList.add('hidden'); // Add hidden class for styling
-        }
-
-        /**
-         * Copies the text content of a specified HTML element to the clipboard.
-         * Provides visual feedback to the user.
-         * @param {string} elementId - The ID of the element whose text content should be copied.
-         */
-        function copyToClipboard(elementId) {
-            const element = document.getElementById(elementId);
-            const textToCopy = element.textContent; // Get the text content
-
-            navigator.clipboard.writeText(textToCopy).then(() => {
-                // Temporarily change button text to indicate success
-                const originalText = element.textContent;
-                element.textContent = 'Copied!';
-                setTimeout(() => {
-                    element.textContent = originalText; // Revert to original text after a delay
-                }, 1500); // 1.5 second delay
-            }).catch(err => {
-                console.error('Failed to copy text: ', err);
-                alert('Failed to copy text to clipboard.'); // Inform user on failure
-            });
-        }
-
-        /**
-         * Copies all visible wallet data from the modal to the clipboard.
-         * Formats the data with labels for readability.
-         */
-        function copyWalletData() {
-            const address = document.getElementById('modal-address').textContent;
-            const type = document.getElementById('modal-type').textContent;
-            const network = document.getElementById('modal-network').textContent;
-
-            let text = `Address: ${address}\nType: ${type}\nNetwork: ${network}`;
-
-            // Append private key if it's visible
-            const pkElement = document.getElementById('modal-private-key');
-            if (pkElement.style.display !== 'none') {
-                text += `\nPrivate Key: ${pkElement.textContent}`;
-            }
-
-            // Append mnemonic if it's visible
-            const mnemonicElement = document.getElementById('modal-mnemonic');
-            if (mnemonicElement.style.display !== 'none') {
-                text += `\nMnemonic: ${mnemonicElement.textContent}`;
-            }
-
-            navigator.clipboard.writeText(text).then(() => {
-                alert('Wallet data copied to clipboard!'); // Success message
-            }).catch(err => {
-                console.error('Failed to copy wallet data: ', err);
-                alert('Failed to copy wallet data to clipboard.'); // Failure message
-            });
-        }
-
-        /**
-         * Exports the parsed wallet data to a CSV file.
-         * Creates a Blob and triggers a download.
-         */
-        function exportResults() {
-            if (!parsedWallets.length) {
-                alert("No wallet data to export.");
-                return;
-            }
-
-            // CSV header row
-            let csv = 'Address,Type,Network,Encrypted,Private Key,Mnemonic\n';
-
-            // Iterate over parsed wallets and format each as a CSV row
-            parsedWallets.forEach(wallet => {
-                // Escape quotes within fields and wrap fields in double quotes
-                const address = `"${wallet.address.replace(/"/g, '""')}"`;
-                const type = `"${wallet.type.replace(/"/g, '""')}"`;
-                const network = `"${wallet.network.replace(/"/g, '""')}"`;
-                const encrypted = wallet.encrypted;
-                const privateKey = wallet.privateKey ? `"${wallet.privateKey.replace(/"/g, '""')}"` : '""';
-                const mnemonic = wallet.mnemonic ? `"${wallet.mnemonic.replace(/"/g, '""')}"` : '""';
-
-                csv += `${address},${type},${network},${encrypted},${privateKey},${mnemonic}\n`;
-            });
-
-            // Create a Blob object from the CSV string
-            const blob = new Blob([csv], {
-                type: 'text/csv;charset=utf-8;'
-            });
-
-            // Create a temporary URL for the Blob
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); // Create a download link
-            a.href = url;
-            // Set filename with current date
-            a.download = `wallets_${new Date().toISOString().slice(0, 10)}.csv`;
-            a.click(); // Simulate click to trigger download
-            URL.revokeObjectURL(url); // Clean up the temporary URL
-        }
-
-        /**
-         * Formats a file size in bytes to a human-readable string (e.g., KB, MB, GB).
-         * @param {number} bytes - The file size in bytes.
-         * @returns {string} The formatted file size string.
-         */
-        function formatFileSize(bytes) {
-            if (bytes === 0) return '0 Bytes'; // Handle zero bytes case
-            const k = 1024; // Kilobyte factor
-            const sizes = ['Bytes', 'KB', 'MB', 'GB']; // Units for display
-            const i = Math.floor(Math.log(bytes) / Math.log(k)); // Determine the appropriate unit index
-            // Calculate the value in the determined unit and format to 2 decimal places
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        }
-
-        /**
-         * Displays an error message in the designated error section of the UI.
-         * @param {string} message - The error message to display.
-         */
-        function showError(message) {
-            document.getElementById('error-section').classList.remove('hidden'); // Show the error section
-            document.getElementById('error-message').textContent = message; // Set the error message text
-        }
-
-        /**
-         * Resets the UI to its initial state, clearing any parsed results or error messages.
-         * This allows the user to parse a new file.
-         */
-        function resetUI() {
-            document.getElementById('results-section').classList.add('hidden'); // Hide results
-            document.getElementById('error-section').classList.add('hidden'); // Hide errors
-            parsedWallets = []; // Clear the stored wallet data
-            currentFile = null; // Clear the current file reference
-            document.getElementById('file-input').value = ''; // Clear the file input value
-        }
-
-        // Initialize the application when the DOM is fully loaded
-        window.onload = init;
+        window.sha256 = sha256;
+        window.sha512 = sha512;
+        window.sha3_256 = sha3_256;
+        window.sha3_512 = sha3_512;
+        window.ripemd160 = ripemd160;
+        window.hmac = hmac;
+        window.pbkdf2 = pbkdf2;
+        window.blake2b = blake2b;
+        window.secp256k1 = secp256k1;
+        window.ed25519 = ed25519;
+        window.HDKey = HDKey; // Expose HDKey for advanced derivation
     </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600&amp;display=swap');
+
+        :root {
+            --primary: #6366f1;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+        }
+
+        .font-display {
+            font-family: 'Space Grotesk', 'Inter', sans-serif;
+            font-weight: 600;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+        }
+
+        .dark .glass {
+            background: rgba(30, 41, 59, 0.95);
+        }
+
+        .section-header {
+            font-size: 1.1rem;
+            font-weight: 600;
+            letter-spacing: -.025em;
+        }
+
+        .wallet-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .wallet-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
+
+        .dark .wallet-card:hover {
+            box-shadow: 0 20px 25px -5px rgb(255 255 255 / 0.05), 0 8px 10px -6px rgb(255 255 255 / 0.05);
+        }
+
+        .mono {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        }
+
+        .nav-active {
+            background-color: #6366f1;
+            color: white;
+            border-radius: 6px;
+        }
+
+        .result-row {
+            transition: background-color 0.2s ease;
+        }
+
+        .result-row:hover {
+            background-color: #f8fafc;
+        }
+
+        .dark .result-row:hover {
+            background-color: #334155;
+        }
+
+        .status-dot {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        .file-drop-zone {
+            transition: all 0.3s ease;
+        }
+
+        .file-drop-zone.dragover {
+            background-color: #f1e7ff;
+            border-color: #6366f1;
+        }
+
+        .dark .file-drop-zone.dragover {
+            background-color: #475569;
+            border-color: #6366f1;
+        }
+
+        .metric-value {
+            font-variant-numeric: tabular-nums;
+        }
+
+        .key-value {
+            font-size: 0.875rem;
+            line-height: 1.25rem;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        .dark ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 4px;
+        }
+
+        .dark ::-webkit-scrollbar-thumb {
+            background: #64748b;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6366f1;
+        }
+
+        /* Custom styles for advanced features */
+        .advanced-mode-section {
+            display: none;
+            /* Initially hidden */
+        }
+
+        .advanced-mode-section.active {
+            display: block;
+        }
+
+        .derivation-path-input {
+            background-color: #f1f5f9;
+            color: #1e293b;
+            border: 1px solid #cbd5e1;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            line-height: 1.25rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .dark .derivation-path-input {
+            background-color: #334155;
+            color: #e2e8f0;
+            border-color: #475569;
+        }
+
+        .derivation-path-input:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.5);
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 dark:bg-slate-900">
+    <!-- Navbar -->
+    <nav class="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
+        <div class="max-w-screen-xl mx-auto">
+            <div class="px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-x-3">
+                    <div class="w-9 h-9 bg-indigo-600 rounded-2xl flex items-center justify-center">
+                        <i class="fa-solid fa-wallet text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <span class="font-display text-2xl font-semibold tracking-tighter">Wallet</span>
+                        <span class="font-display text-2xl font-semibold tracking-tighter text-indigo-600">Viewer</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-x-2">
+                    <div class="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-3xl flex items-center text-sm">
+                        <div class="w-2 h-2 bg-emerald-500 rounded-full mr-2 status-dot"></div>
+                        <span class="text-slate-600 dark:text-slate-400 text-xs font-medium">v2.5.0 (Advanced)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-screen-xl mx-auto px-6 pt-8 pb-12">
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row md:items-end md:justify-between mb-8">
+            <div>
+                <h1 class="text-4xl font-semibold tracking-tighter">Advanced Wallet Backup Parser</h1>
+                <p class="text-slate-600 dark:text-slate-400 mt-2">Parse .ldb, .json, .dat and keystore files securely
+                    client-side, with advanced derivation and utility functions.</p>
+            </div>
+
+            <div class="mt-4 md:mt-0 flex items-center gap-x-3">
+                <div
+                    class="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-3xl text-sm flex items-center gap-x-2">
+                    <i class="fa-solid fa-shield-halved text-emerald-500"></i>
+                    <span class="text-sm font-medium">Client-side only</span>
+                </div>
+                <button id="toggle-advanced-mode"
+                    class="px-4 py-2 text-sm font-medium bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900 dark:hover:bg-indigo-800 text-indigo-600 dark:text-indigo-300 rounded-2xl transition-colors">
+                    <i id="advanced-mode-icon" class="fa-solid fa-caret-down mr-2"></i>
+                    <span>Advanced Mode</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Upload Section -->
+        <div class="glass border border-slate-200 dark:border-slate-700 rounded-3xl p-8 mb-8">
+            <div class="flex flex-col lg:flex-row gap-8">
+                <!-- Upload Area -->
+                <div class="flex-1">
+                    <div id="drop-zone"
+                        class="file-drop-zone border-2 border-dashed border-slate-300 dark:border-slate-600 hover:border-indigo-400 rounded-3xl p-8 text-center cursor-pointer transition-all">
+                        <div
+                            class="mx-auto w-12 h-12 bg-indigo-100 dark:bg-indigo-900/30 rounded-2xl flex items-center justify-center mb-4">
+                            <i class="fa-solid fa-upload text-indigo-600 text-2xl"></i>
+                        </div>
+                        <h3 class="font-semibold text-lg">Drop your wallet backup file here</h3>
+                        <p class="text-sm text-slate-500 mt-1">Supports .json, .dat, .ldb, keystore files.</p>
+
+                        <div class="mt-4">
+                            <label
+                                class="inline-flex items-center px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 transition-colors text-white text-sm font-medium rounded-2xl cursor-pointer">
+                                <i class="fa-solid fa-folder-open mr-2"></i>
+                                <span>Browse Files</span>
+                                <input type="file" id="file-input" class="hidden"
+                                    accept=".json,.dat,.ldb,.keystore,.wallet,.backup">
+                            </label>
+                        </div>
+
+                        <div class="mt-3 text-xs text-slate-400">
+                            Max file size: 100MB
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Supported Formats -->
+                <div class="lg:w-80">
+                    <div class="text-sm font-semibold mb-3 px-1">Supported Formats</div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div
+                            class="flex items-center gap-x-3 px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl">
+                            <i class="fa-solid fa-file-code text-emerald-500 w-4"></i>
+                            <div>
+                                <div class="text-sm font-medium">JSON</div>
+                                <div class="text-xs text-slate-500">Keystore / V3</div>
+                            </div>
+                        </div>
+                        <div
+                            class="flex items-center gap-x-3 px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl">
+                            <i class="fa-solid fa-database text-amber-500 w-4"></i>
+                            <div>
+                                <div class="text-sm font-medium">LevelDB</div>
+                                <div class="text-xs text-slate-500">.ldb files</div>
+                            </div>
+                        </div>
+                        <div
+                            class="flex items-center gap-x-3 px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl">
+                            <i class="fa-solid fa-file text-blue-500 w-4"></i>
+                            <div>
+                                <div class="text-sm font-medium">DAT</div>
+                                <div class="text-xs text-slate-500">Binary backup</div>
+                            </div>
+                        </div>
+                        <div
+                            class="flex items-center gap-x-3 px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl">
+                            <i class="fa-solid fa-key text-violet-500 w-4"></i>
+                            <div>
+                                <div class="text-sm font-medium">Keystore</div>
+                                <div class="text-xs text-slate-500">Encrypted</div>
+                            </div>
+                        </div>
+                        <div
+                            class="flex items-center gap-x-3 px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl">
+                            <i class="fa-solid fa-file-word text-cyan-500 w-4"></i>
+                            <div>
+                                <div class="text-sm font-medium">TXT/WAL</div>
+                                <div class="text-xs text-slate-500">Mnemonic/Private Key</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Advanced Mode Section -->
+        <div id="advanced-mode-section" class="glass border border-slate-200 dark:border-slate-700 rounded-3xl p-8 mb-8 advanced-mode-section">
+            <h2 class="text-2xl font-semibold tracking-tighter mb-6">Advanced Options</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- BIP32/BIP44 Derivation -->
+                <div>
+                    <label for="derivation-path" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">BIP32/BIP44 Derivation Path</label>
+                    <input type="text" id="derivation-path" placeholder="e.g., m/44'/60'/0'/0/0" class="derivation-path-input">
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Enter a derivation path to extract specific keys. Leave blank for default or all.</p>
+                </div>
+
+                <!-- Custom Network Selection -->
+                <div>
+                    <label for="custom-network" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Custom Network</label>
+                    <select id="custom-network" class="derivation-path-input">
+                        <option value="">Auto-detect</option>
+                        <option value="Ethereum">Ethereum</option>
+                        <option value="Polygon">Polygon</option>
+                        <option value="Binance Smart Chain">Binance Smart Chain</option>
+                        <option value="Arbitrum">Arbitrum</option>
+                        <option value="Optimism">Optimism</option>
+                        <option value="Avalanche">Avalanche</option>
+                        <option value="Fantom">Fantom</option>
+                        <option value="Solana">Solana</option>
+                        <option value="Bitcoin">Bitcoin</option>
+                        <option value="Litecoin">Litecoin</option>
+                        <option value="Dogecoin">Dogecoin</option>
+                        <option value="Other">Other</option>
+                    </select>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Manually specify the network if auto-detection fails.</p>
+                </div>
+
+                <!-- Utility Functions -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Cryptographic Utilities</label>
+                    <div class="flex items-center gap-x-3">
+                        <button onclick="runUtility('sha256')" class="px-4 py-2 text-xs font-medium bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-2xl hover:bg-slate-50">SHA-256</button>
+                        <button onclick="runUtility('sha512')" class="px-4 py-2 text-xs font-medium bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-2xl hover:bg-slate-50">SHA-512</button>
+                        <button onclick="runUtility('ripemd160')" class="px-4 py-2 text-xs font-medium bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-2xl hover:bg-slate-50">RIPEMD-160</button>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Perform common hashing operations.</p>
+                </div>
+
+                <!-- Seed Phrase to Private Key/Address -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Mnemonic to Key Derivation</label>
+                    <div class="flex items-center gap-x-2">
+                        <input type="text" id="mnemonic-input" placeholder="Enter mnemonic phrase" class="derivation-path-input flex-1">
+                        <button onclick="deriveFromMnemonic()" class="px-4 py-2 text-xs font-medium bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700">Derive</button>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Convert a mnemonic phrase to private keys and addresses.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="results-section" class="hidden">
+            <!-- File Info -->
+            <div class="flex flex-wrap items-center justify-between mb-4 px-1 gap-2">
+                <div>
+                    <span class="font-semibold">Parsed Results</span>
+                    <span id="file-name"
+                        class="ml-3 text-sm px-3 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-3xl text-slate-600 dark:text-slate-400"></span>
+                </div>
+                <button onclick="resetUI()"
+                    class="flex items-center gap-x-2 px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors">
+                    <i class="fa-solid fa-redo"></i>
+                    <span>Parse another file</span>
+                </button>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div class="glass border border-slate-200 dark:border-slate-700 rounded-3xl p-5">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="text-xs font-medium text-slate-500">WALLETS FOUND</div>
+                            <div id="wallet-count" class="text-3xl font-semibold mt-1 metric-value">0</div>
+                        </div>
+                        <i class="fa-solid fa-wallet text-indigo-500 text-2xl"></i>
+                    </div>
+                </div>
+
+                <div class="glass border border-slate-200 dark:border-slate-700 rounded-3xl p-5">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="text-xs font-medium text-slate-500">NETWORKS</div>
+                            <div id="network-count" class="text-3xl font-semibold mt-1 metric-value">0</div>
+                        </div>
+                        <i class="fa-solid fa-globe text-emerald-500 text-2xl"></i>
+                    </div>
+                </div>
+
+                <div class="glass border border-slate-200 dark:border-slate-700 rounded-3xl p-5">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="text-xs font-medium text-slate-500">ENCRYPTED</div>
+                            <div id="encrypted-count" class="text-3xl font-semibold mt-1 metric-value">0</div>
+                        </div>
+                        <i class="fa-solid fa-lock text-amber-500 text-2xl"></i>
+                    </div>
+                </div>
+
+                <div class="glass border border-slate-200 dark:border-slate-700 rounded-3xl p-5">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="text-xs font-medium text-slate-500">FILE SIZE</div>
+                            <div id="file-size" class="text-3xl font-semibold mt-1 metric-value">0 KB</div>
+                        </div>
+                        <i class="fa-solid fa-file text-slate-400 text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Wallets Table -->
+            <div class="glass border border-slate-200 dark:border-slate-700 rounded-3xl overflow-hidden">
+                <div
+                    class="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3">
+                    <div class="font-semibold">Detected Wallets</div>
+                    <div class="flex items-center gap-x-2">
+                        <button onclick="exportResults('csv')"
+                            class="px-4 py-2 text-xs font-medium flex items-center gap-x-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-2xl transition-colors">
+                            <i class="fa-solid fa-download text-xs"></i>
+                            <span>Export CSV</span>
+                        </button>
+                        <button onclick="exportResults('json')"
+                            class="px-4 py-2 text-xs font-medium flex items-center gap-x-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-2xl transition-colors">
+                            <i class="fa-solid fa-download text-xs"></i>
+                            <span>Export JSON</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                                <th class="text-left px-6 py-3 text-xs font-medium text-slate-500 w-12">#</th>
+                                <th class="text-left px-6 py-3 text-xs font-medium text-slate-500">Address / Public Key</th>
+                                <th class="text-left px-6 py-3 text-xs font-medium text-slate-500">Type</th>
+                                <th class="text-left px-6 py-3 text-xs font-medium text-slate-500">Network</th>
+                                <th class="text-left px-6 py-3 text-xs font-medium text-slate-500">Status</th>
+                                <th class="text-right px-6 py-3 text-xs font-medium text-slate-500 w-20">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="wallets-table" class="divide-y divide-slate-200 dark:divide-slate-700 text-sm">
+                            <!-- Wallets will be rendered here by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error State -->
+        <div id="error-section"
+            class="hidden glass border border-red-200 dark:border-red-900/30 bg-red-50 dark:bg-red-900/10 rounded-3xl p-6">
+            <div class="flex items-center gap-x-3">
+                <i class="fa-solid fa-exclamation-triangle text-red-500"></i>
+                <div>
+                    <div class="font-semibold text-red-600 dark:text-red-400">Parsing Error</div>
+                    <div id="error-message" class="text-sm text-red-500 dark:text-red-400"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wallet Detail Modal -->
+    <div id="wallet-modal" onclick="if (event.target.id === 'wallet-modal') closeModal()"
+        class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+        <div onclick="event.stopImmediatePropagation()"
+            class="glass border border-slate-200 dark:border-slate-700 rounded-3xl w-full max-w-lg mx-4">
+            <div class="px-6 py-4 border-b flex items-center justify-between">
+                <div class="font-semibold">Wallet Details</div>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-times"></i>
+                </button>
+            </div>
+
+            <div class="p-6 space-y-5">
+                <div>
+                    <div class="text-xs font-medium text-slate-500 mb-1">ADDRESS</div>
+                    <div id="modal-address"
+                        class="mono text-sm break-all bg-slate-100 dark:bg-slate-800 p-3 rounded-2xl"></div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <div class="text-xs font-medium text-slate-500 mb-1">TYPE</div>
+                        <div id="modal-type" class="font-medium"></div>
+                    </div>
+                    <div>
+                        <div class="text-xs font-medium text-slate-500 mb-1">NETWORK</div>
+                        <div id="modal-network" class="font-medium"></div>
+                    </div>
+                </div>
+
+                <div id="modal-private-key-section">
+                    <div class="text-xs font-medium text-slate-500 mb-1">PRIVATE KEY</div>
+                    <div class="flex items-center gap-x-2">
+                        <div id="modal-private-key"
+                            class="mono text-sm flex-1 bg-slate-100 dark:bg-slate-800 p-3 rounded-2xl break-all"></div>
+                        <button onclick="copyToClipboard('modal-private-key')"
+                            class="px-3 py-2 text-xs bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-2xl hover:bg-slate-50">
+                            <i class="fa-solid fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="modal-mnemonic-section" class="hidden">
+                    <div class="text-xs font-medium text-slate-500 mb-1">MNEMONIC</div>
+                    <div class="flex items-center gap-x-2">
+                        <div id="modal-mnemonic"
+                            class="mono text-sm flex-1 bg-slate-100 dark:bg-slate-800 p-3 rounded-2xl break-all"></div>
+                        <button onclick="copyToClipboard('modal-mnemonic')"
+                            class="px-3 py-2 text-xs bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-2xl hover:bg-slate-50">
+                            <i class="fa-solid fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="modal-public-key-section" class="hidden">
+                    <div class="text-xs font-medium text-slate-500 mb-1">PUBLIC KEY</div>
+                    <div class="flex items-center gap-x-2">
+                        <div id="modal-public-key"
+                            class="mono text-sm flex-1 bg-slate-100 dark:bg-slate-800 p-3 rounded-2xl break-all"></div>
+                        <button onclick="copyToClipboard('modal-public-key')"
+                            class="px-3 py-2 text-xs bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-2xl hover:bg-slate-50">
+                            <i class="fa-solid fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="px-6 py-4 border-t flex justify-end gap-x-3">
+                <button onclick="closeModal()"
+                    class="px-5 py-2 text-sm font-medium text-slate-600 hover:text-slate-900">Close</button>
+                <button onclick="copyWalletData()"
+                    class="px-5 py-2 text-sm font-medium bg-indigo-600 text-white rounded-2xl">Copy All Data</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Utility Modal -->
+    <div id="utility-modal" onclick="if (event.target.id === 'utility-modal') closeUtilityModal()"
+        class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+        <div onclick="event.stopImmediatePropagation()"
+            class="glass border border-slate-200 dark:border-slate-700 rounded-3xl w-full max-w-lg mx-4">
+            <div class="px-6 py-4 border-b flex items-center justify-between">
+                <div id="utility-modal-title" class="font-semibold">Utility Output</div>
+                <button onclick="closeUtilityModal()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-times"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div id="utility-output-content" class="mono text-sm break-all bg-slate-100 dark:bg-slate-800 p-3 rounded-2xl max-h-96 overflow-y-auto"></div>
+                <div class="flex justify-end gap-x-3">
+                    <button onclick="copyToClipboard('utility-output-content')"
+                        class="px-4 py-2 text-sm font-medium bg-indigo-600 text-white rounded-2xl">Copy Output</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js"></script>
+
+    <script>
+        // --- Global Variables ---
+        let parsedWallets = [];
+        let currentFile = null;
+        const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
+
+        // --- DOM Element References ---
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const resultsSection = document.getElementById('results-section');
+        const errorSection = document.getElementById('error-section');
+        const errorMessageElement = document.getElementById('error-message');
+        const fileNameElement = document.getElementById('file-name');
+        const walletCountElement = document.getElementById('wallet-count');
+        const networkCountElement = document.getElementById('network-count');
+        const encryptedCountElement = document.getElementById('encrypted-count');
+        const fileSizeElement = document.getElementById('file-size');
+        const walletsTableBody = document.getElementById('wallets-table');
+        const walletModal = document.getElementById('wallet-modal');
+        const modalAddressElement = document.getElementById('modal-address');
+        const modalTypeElement = document.getElementById('modal-type');
+        const modalNetworkElement = document.getElementById('modal-network');
+        const modalPrivateKeyElement = document.getElementById('modal-private-key');
+        const modalPrivateKeySection = document.getElementById('modal-private-key-section');
+        const modalMnemonicElement = document.getElementById('modal-mnemonic');
+        const modalMnemonicSection = document.getElementById('modal-mnemonic-section');
+        const modalPublicKeyElement = document.getElementById('modal-public-key');
+        const modalPublicKeySection = document.getElementById('modal-public-key-section');
+        const advancedModeSection = document.getElementById('advanced-mode-section');
+        const toggleAdvancedModeButton = document.getElementById('toggle-advanced-mode');
+        const advancedModeIcon = document.getElementById('advanced-mode-icon');
+        const derivationPathInput = document.getElementById('derivation-path');
+        const customNetworkSelect = document.getElementById('custom-network');
+        const mnemonicInputElement = document.getElementById('mnemonic-input');
+        const utilityModal = document.getElementById('utility-modal');
+        const utilityModalTitle = document.getElementById('utility-modal-title');
+        const utilityOutputContent = document.getElementById('utility-output-content');
+
+        // --- Initialization ---
+        window.onload = init;
+
+        function init() {
+            initializeTailwind();
+            setupDragAndDrop();
+            setupFileInput();
+            setupAdvancedModeToggle();
+            setupUtilityModal();
+            // Preload common networks for faster lookup
+            preloadNetworks();
+
+           </script>
 </body>
 
 </html>
